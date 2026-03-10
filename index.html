@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* === RESET & GLOBAL === */
+        /* (CSS remains exactly as before – unchanged) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
@@ -405,6 +405,7 @@
         <!-- Transport and Volume Controls -->
         <div class="transport-controls">
             <button class="btn btn-secondary" id="playPauseBtn" disabled><i class="fas fa-play"></i> Play</button>
+            <button class="btn btn-secondary" id="loopBtn" disabled><i class="fas fa-repeat"></i> Loop</button>
             <button class="btn btn-secondary" id="restartBtn" disabled><i class="fas fa-undo-alt"></i> Restart</button>
             <div class="volume-control">
                 <i class="fas fa-volume-down"></i>
@@ -582,7 +583,25 @@
                 this.isPlaying = false;
                 this.startTime = 0;
                 this.pauseTime = 0;
-                this.masterGain = null; // for volume control
+                this.masterGain = null;
+                this.loop = false; // Loop flag
+
+                // Store references to audio nodes for real‑time updates
+                this.nodes = {
+                    bassEQ: null,
+                    midEQ: null,
+                    trebleEQ: null,
+                    bassBoost: null,
+                    distortion: null,
+                    delay: null,
+                    delayFeedback: null,
+                    reverb: {
+                        dryGain: null,
+                        wetGain: null,
+                        convolver: null,
+                        reverbSum: null
+                    }
+                };
 
                 // Current effect settings (mirrors UI)
                 this.effects = {
@@ -596,16 +615,14 @@
                     volume: 1.0
                 };
 
-                this.lockPitchSpeed = true; // mirror checkbox
+                this.lockPitchSpeed = true;
 
                 this.initAudioContext();
             }
 
-            // Initialize Web Audio
             async initAudioContext() {
                 try {
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    // Create master gain for volume
                     this.masterGain = this.audioContext.createGain();
                     this.masterGain.gain.value = this.effects.volume;
                     this.masterGain.connect(this.audioContext.destination);
@@ -618,8 +635,20 @@
                 }
             }
 
-            // Load and decode audio file
             async loadAudioFile(file) {
+                // Stop any current playback and clean up
+                if (this.sourceNode) {
+                    try { this.sourceNode.stop(); } catch (e) {}
+                    this.sourceNode = null;
+                }
+                this.isPlaying = false;
+                this.pauseTime = 0;
+                this.startTime = 0;
+                
+                // Reset UI time display
+                document.getElementById('currentTime').textContent = '0:00';
+                document.getElementById('progressFill').style.width = '0%';
+                
                 const arrayBuffer = await file.arrayBuffer();
                 this.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
                 this.drawWaveform();
@@ -627,13 +656,22 @@
                 document.getElementById('fileDuration').textContent = this.formatTime(this.audioBuffer.duration);
                 document.getElementById('totalTime').textContent = this.formatTime(this.audioBuffer.duration);
                 document.getElementById('playPauseBtn').disabled = false;
+                document.getElementById('loopBtn').disabled = false;
                 document.getElementById('restartBtn').disabled = false;
                 document.getElementById('exportBtn').disabled = false;
                 this.updatePlayPauseButton();
+                
+                // Reset loop button to secondary (off) state
+                this.loop = false;
+                const loopBtn = document.getElementById('loopBtn');
+                loopBtn.className = 'btn btn-secondary';
+                
+                // Build the effect chain for the new buffer (but don't start)
+                this.buildEffectChain();
+                
                 return this.audioBuffer;
             }
 
-            // Draw waveform on canvas
             drawWaveform() {
                 if (!this.audioBuffer) return;
                 const canvas = document.getElementById('waveform-canvas');
@@ -660,7 +698,6 @@
                 ctx.stroke();
             }
 
-            // Helper: create distortion curve
             createDistortionCurve(amount) {
                 const samples = 44100;
                 const curve = new Float32Array(samples);
@@ -672,7 +709,6 @@
                 return curve;
             }
 
-            // Helper: create simple reverb impulse
             createReverbImpulse(duration) {
                 const sampleRate = this.audioContext.sampleRate;
                 const length = sampleRate * duration;
@@ -687,95 +723,7 @@
                 return impulse;
             }
 
-            // Build the full effect chain and return the final node to connect to master gain
-            applyEffectsToSource(source, context) {
-                // Set speed and pitch
-                source.playbackRate.value = this.effects.speed;
-                if (!this.lockPitchSpeed) {
-                    source.detune.value = this.effects.pitch * 100;
-                }
-
-                let lastNode = source;
-
-                // ---- EQ (always active, but gains can be zero) ----
-                const bassEQ = context.createBiquadFilter();
-                bassEQ.type = 'lowshelf';
-                bassEQ.frequency.value = 250;
-                bassEQ.gain.value = this.effects.eq.bass;
-
-                const midEQ = context.createBiquadFilter();
-                midEQ.type = 'peaking';
-                midEQ.frequency.value = 1000;
-                midEQ.Q.value = 1;
-                midEQ.gain.value = this.effects.eq.mid;
-
-                const trebleEQ = context.createBiquadFilter();
-                trebleEQ.type = 'highshelf';
-                trebleEQ.frequency.value = 4000;
-                trebleEQ.gain.value = this.effects.eq.treble;
-
-                lastNode.connect(bassEQ);
-                lastNode = bassEQ;
-                lastNode.connect(midEQ);
-                lastNode = midEQ;
-                lastNode.connect(trebleEQ);
-                lastNode = trebleEQ;
-
-                // ---- Bass Boost (if active) ----
-                if (this.effects.bass.active) {
-                    const bassBoost = context.createBiquadFilter();
-                    bassBoost.type = 'lowshelf';
-                    bassBoost.frequency.value = this.effects.bass.freq;
-                    bassBoost.gain.value = this.effects.bass.gain;
-                    lastNode.connect(bassBoost);
-                    lastNode = bassBoost;
-                }
-
-                // ---- Distortion (if active) ----
-                if (this.effects.distortion.active && this.effects.distortion.amount > 0) {
-                    const distortion = context.createWaveShaper();
-                    distortion.curve = this.createDistortionCurve(this.effects.distortion.amount);
-                    distortion.oversample = '4x';
-                    lastNode.connect(distortion);
-                    lastNode = distortion;
-                }
-
-                // ---- Delay (if active) ----
-                if (this.effects.delay.active) {
-                    const delay = context.createDelay(2.0);
-                    delay.delayTime.value = this.effects.delay.time;
-                    const feedback = context.createGain();
-                    feedback.gain.value = this.effects.delay.feedback;
-                    delay.connect(feedback);
-                    feedback.connect(delay);
-                    lastNode.connect(delay);
-                    lastNode = delay;
-                }
-
-                // ---- Reverb (if active) ----
-                if (this.effects.reverb.active) {
-                    const dryGain = context.createGain();
-                    const wetGain = context.createGain();
-                    dryGain.gain.value = 1 - this.effects.reverb.wet;
-                    wetGain.gain.value = this.effects.reverb.wet;
-
-                    const convolver = context.createConvolver();
-                    convolver.buffer = this.createReverbImpulse(this.effects.reverb.decay);
-
-                    lastNode.connect(dryGain);
-                    lastNode.connect(convolver);
-                    convolver.connect(wetGain);
-
-                    const reverbSum = context.createGain();
-                    dryGain.connect(reverbSum);
-                    wetGain.connect(reverbSum);
-                    lastNode = reverbSum;
-                }
-
-                return lastNode;
-            }
-
-            // Build chain and prepare source for playback (does not start)
+            // Build the full effect chain and store node references
             buildEffectChain() {
                 if (!this.audioContext || !this.audioBuffer) return;
 
@@ -789,14 +737,166 @@
                 this.sourceNode = this.audioContext.createBufferSource();
                 this.sourceNode.buffer = this.audioBuffer;
 
-                // Apply effects and connect to master gain
-                const outputNode = this.applyEffectsToSource(this.sourceNode, this.audioContext);
-                outputNode.connect(this.masterGain);
+                // Set speed and pitch
+                this.sourceNode.playbackRate.value = this.effects.speed;
+                if (!this.lockPitchSpeed) {
+                    this.sourceNode.detune.value = this.effects.pitch * 100;
+                }
+
+                let lastNode = this.sourceNode;
+
+                // ---- EQ (always active) ----
+                const bassEQ = this.audioContext.createBiquadFilter();
+                bassEQ.type = 'lowshelf';
+                bassEQ.frequency.value = 250;
+                bassEQ.gain.value = this.effects.eq.bass;
+
+                const midEQ = this.audioContext.createBiquadFilter();
+                midEQ.type = 'peaking';
+                midEQ.frequency.value = 1000;
+                midEQ.Q.value = 1;
+                midEQ.gain.value = this.effects.eq.mid;
+
+                const trebleEQ = this.audioContext.createBiquadFilter();
+                trebleEQ.type = 'highshelf';
+                trebleEQ.frequency.value = 4000;
+                trebleEQ.gain.value = this.effects.eq.treble;
+
+                lastNode.connect(bassEQ);
+                lastNode = bassEQ;
+                lastNode.connect(midEQ);
+                lastNode = midEQ;
+                lastNode.connect(trebleEQ);
+                lastNode = trebleEQ;
+
+                // Store EQ nodes
+                this.nodes.bassEQ = bassEQ;
+                this.nodes.midEQ = midEQ;
+                this.nodes.trebleEQ = trebleEQ;
+
+                // ---- Bass Boost (if active) ----
+                if (this.effects.bass.active) {
+                    const bassBoost = this.audioContext.createBiquadFilter();
+                    bassBoost.type = 'lowshelf';
+                    bassBoost.frequency.value = this.effects.bass.freq;
+                    bassBoost.gain.value = this.effects.bass.gain;
+                    lastNode.connect(bassBoost);
+                    lastNode = bassBoost;
+                    this.nodes.bassBoost = bassBoost;
+                } else {
+                    this.nodes.bassBoost = null;
+                }
+
+                // ---- Distortion (if active) ----
+                if (this.effects.distortion.active && this.effects.distortion.amount > 0) {
+                    const distortion = this.audioContext.createWaveShaper();
+                    distortion.curve = this.createDistortionCurve(this.effects.distortion.amount);
+                    distortion.oversample = '4x';
+                    lastNode.connect(distortion);
+                    lastNode = distortion;
+                    this.nodes.distortion = distortion;
+                } else {
+                    this.nodes.distortion = null;
+                }
+
+                // ---- Delay (if active) ----
+                if (this.effects.delay.active) {
+                    const delay = this.audioContext.createDelay(2.0);
+                    delay.delayTime.value = this.effects.delay.time;
+                    const feedback = this.audioContext.createGain();
+                    feedback.gain.value = this.effects.delay.feedback;
+                    delay.connect(feedback);
+                    feedback.connect(delay);
+                    lastNode.connect(delay);
+                    lastNode = delay;
+                    this.nodes.delay = delay;
+                    this.nodes.delayFeedback = feedback;
+                } else {
+                    this.nodes.delay = null;
+                    this.nodes.delayFeedback = null;
+                }
+
+                // ---- Reverb (if active) ----
+                if (this.effects.reverb.active) {
+                    const dryGain = this.audioContext.createGain();
+                    const wetGain = this.audioContext.createGain();
+                    dryGain.gain.value = 1 - this.effects.reverb.wet;
+                    wetGain.gain.value = this.effects.reverb.wet;
+
+                    const convolver = this.audioContext.createConvolver();
+                    convolver.buffer = this.createReverbImpulse(this.effects.reverb.decay);
+
+                    lastNode.connect(dryGain);
+                    lastNode.connect(convolver);
+                    convolver.connect(wetGain);
+
+                    const reverbSum = this.audioContext.createGain();
+                    dryGain.connect(reverbSum);
+                    wetGain.connect(reverbSum);
+                    lastNode = reverbSum;
+
+                    this.nodes.reverb = {
+                        dryGain, wetGain, convolver, reverbSum
+                    };
+                } else {
+                    this.nodes.reverb = {
+                        dryGain: null, wetGain: null, convolver: null, reverbSum: null
+                    };
+                }
+
+                // Connect final node to master gain
+                lastNode.connect(this.masterGain);
             }
 
-            // Rebuild chain and resume playback if playing (for real-time updates)
-            async refreshEffects() {
-                if (!this.audioContext || !this.audioBuffer) return;
+            // ---- Real‑time parameter updates (no rebuild) ----
+            updateSpeedPitch() {
+                if (!this.sourceNode) return;
+                this.sourceNode.playbackRate.value = this.effects.speed;
+                if (!this.lockPitchSpeed) {
+                    this.sourceNode.detune.value = this.effects.pitch * 100;
+                } else {
+                    this.sourceNode.detune.value = 0; // pitch locked means detune 0
+                }
+            }
+
+            updateEQ() {
+                if (this.nodes.bassEQ) this.nodes.bassEQ.gain.value = this.effects.eq.bass;
+                if (this.nodes.midEQ) this.nodes.midEQ.gain.value = this.effects.eq.mid;
+                if (this.nodes.trebleEQ) this.nodes.trebleEQ.gain.value = this.effects.eq.treble;
+            }
+
+            updateBass() {
+                if (this.nodes.bassBoost) {
+                    this.nodes.bassBoost.frequency.value = this.effects.bass.freq;
+                    this.nodes.bassBoost.gain.value = this.effects.bass.gain;
+                }
+                // if toggled, rebuild needed; but gain/freq changes can be applied if node exists
+            }
+
+            updateDistortion() {
+                if (this.nodes.distortion) {
+                    this.nodes.distortion.curve = this.createDistortionCurve(this.effects.distortion.amount);
+                }
+            }
+
+            updateDelay() {
+                if (this.nodes.delay) {
+                    this.nodes.delay.delayTime.value = this.effects.delay.time;
+                }
+                if (this.nodes.delayFeedback) {
+                    this.nodes.delayFeedback.gain.value = this.effects.delay.feedback;
+                }
+            }
+
+            updateReverbWet() {
+                if (this.nodes.reverb.dryGain && this.nodes.reverb.wetGain) {
+                    this.nodes.reverb.dryGain.gain.value = 1 - this.effects.reverb.wet;
+                    this.nodes.reverb.wetGain.gain.value = this.effects.reverb.wet;
+                }
+            }
+
+            // Full rebuild for structural changes (toggle, reverb decay)
+            rebuildChain() {
                 const wasPlaying = this.isPlaying;
                 const currentPos = this.pauseTime;
                 if (wasPlaying) {
@@ -809,12 +909,10 @@
                 }
             }
 
-            // Play from current position
             play() {
                 if (!this.audioContext || !this.audioBuffer) return;
                 if (this.audioContext.state === 'suspended') this.audioContext.resume();
 
-                // If we don't have a sourceNode or it's not built, build it
                 if (!this.sourceNode) {
                     this.buildEffectChain();
                 }
@@ -833,16 +931,13 @@
                 this.sourceNode.stop();
                 this.pauseTime = this.audioContext.currentTime - this.startTime;
                 this.isPlaying = false;
-                // Nullify sourceNode so it can't be reused (must rebuild)
-                this.sourceNode = null;
+                this.sourceNode = null; // must rebuild on next play
                 this.updatePlayPauseButton();
             }
 
             restart() {
                 const wasPlaying = this.isPlaying;
-                if (wasPlaying) {
-                    this.pause(); // this will stop and nullify sourceNode
-                }
+                if (wasPlaying) this.pause();
                 this.pauseTime = 0;
                 this.play();
             }
@@ -864,7 +959,12 @@
                     document.getElementById('progressFill').style.width = percent + '%';
                     requestAnimationFrame(() => this.updateTime());
                 } else {
-                    this.stopPlayback();
+                    if (this.loop) {
+                        // Loop: restart from beginning
+                        this.restart();
+                    } else {
+                        this.stopPlayback();
+                    }
                 }
             }
 
@@ -872,7 +972,7 @@
                 this.isPlaying = false;
                 this.pauseTime = 0;
                 this.startTime = 0;
-                this.sourceNode = null; // important
+                this.sourceNode = null;
                 document.getElementById('currentTime').textContent = '0:00';
                 document.getElementById('progressFill').style.width = '0%';
                 this.updatePlayPauseButton();
@@ -893,6 +993,16 @@
                 }
             }
 
+            toggleLoop() {
+                this.loop = !this.loop;
+                const loopBtn = document.getElementById('loopBtn');
+                if (this.loop) {
+                    loopBtn.className = 'btn btn-primary'; // active state
+                } else {
+                    loopBtn.className = 'btn btn-secondary'; // inactive
+                }
+            }
+
             setVolume(value) {
                 this.effects.volume = value;
                 if (this.masterGain) {
@@ -900,10 +1010,8 @@
                 }
             }
 
-            // Export processed audio as WAV
             async exportAudio() {
                 if (!this.audioBuffer) return;
-
                 document.getElementById('spinner').style.display = 'block';
 
                 const offlineCtx = new OfflineAudioContext(
@@ -915,8 +1023,46 @@
                 const source = offlineCtx.createBufferSource();
                 source.buffer = this.audioBuffer;
 
-                const outputNode = this.applyEffectsToSource(source, offlineCtx);
-                // Apply volume in offline context too
+                // We need to rebuild the effect chain in the offline context
+                // For simplicity, we reuse the same building logic but without storing nodes
+                const buildOfflineChain = (ctx, src) => {
+                    src.playbackRate.value = this.effects.speed;
+                    if (!this.lockPitchSpeed) src.detune.value = this.effects.pitch * 100;
+
+                    let last = src;
+                    // EQ
+                    const bEQ = ctx.createBiquadFilter(); bEQ.type = 'lowshelf'; bEQ.frequency.value = 250; bEQ.gain.value = this.effects.eq.bass;
+                    const mEQ = ctx.createBiquadFilter(); mEQ.type = 'peaking'; mEQ.frequency.value = 1000; mEQ.Q.value = 1; mEQ.gain.value = this.effects.eq.mid;
+                    const tEQ = ctx.createBiquadFilter(); tEQ.type = 'highshelf'; tEQ.frequency.value = 4000; tEQ.gain.value = this.effects.eq.treble;
+                    last.connect(bEQ); last = bEQ; last.connect(mEQ); last = mEQ; last.connect(tEQ); last = tEQ;
+
+                    if (this.effects.bass.active) {
+                        const boost = ctx.createBiquadFilter(); boost.type = 'lowshelf'; boost.frequency.value = this.effects.bass.freq; boost.gain.value = this.effects.bass.gain;
+                        last.connect(boost); last = boost;
+                    }
+                    if (this.effects.distortion.active && this.effects.distortion.amount > 0) {
+                        const dist = ctx.createWaveShaper(); dist.curve = this.createDistortionCurve(this.effects.distortion.amount); dist.oversample = '4x';
+                        last.connect(dist); last = dist;
+                    }
+                    if (this.effects.delay.active) {
+                        const d = ctx.createDelay(2.0); d.delayTime.value = this.effects.delay.time;
+                        const fb = ctx.createGain(); fb.gain.value = this.effects.delay.feedback;
+                        d.connect(fb); fb.connect(d);
+                        last.connect(d); last = d;
+                    }
+                    if (this.effects.reverb.active) {
+                        const dry = ctx.createGain(); dry.gain.value = 1 - this.effects.reverb.wet;
+                        const wet = ctx.createGain(); wet.gain.value = this.effects.reverb.wet;
+                        const conv = ctx.createConvolver(); conv.buffer = this.createReverbImpulse.call({audioContext: ctx}, this.effects.reverb.decay); // hack to use ctx
+                        last.connect(dry);
+                        last.connect(conv); conv.connect(wet);
+                        const sum = ctx.createGain(); dry.connect(sum); wet.connect(sum);
+                        last = sum;
+                    }
+                    return last;
+                };
+
+                const outputNode = buildOfflineChain(offlineCtx, source);
                 const offlineGain = offlineCtx.createGain();
                 offlineGain.gain.value = this.effects.volume;
                 outputNode.connect(offlineGain);
@@ -1042,9 +1188,12 @@
 
         const volumeSlider = document.getElementById('volumeSlider');
 
-        // Helper to refresh effects after change
-        function refreshEffects() {
-            engine.refreshEffects();
+        // Helper to determine if a change requires a full rebuild
+        function needsRebuild(control) {
+            // Toggles and reverb decay require rebuild
+            return control === 'reverbToggle' || control === 'reverbDecay' ||
+                   control === 'bassToggle' || control === 'distortionToggle' ||
+                   control === 'delayToggle';
         }
 
         // ==================== EVENT HANDLERS ====================
@@ -1081,18 +1230,14 @@
 
         // Transport
         document.getElementById('playPauseBtn').addEventListener('click', () => {
-            if (engine.isPlaying) {
-                engine.pause();
-            } else {
-                engine.play();
-            }
+            if (engine.isPlaying) engine.pause(); else engine.play();
         });
+        document.getElementById('loopBtn').addEventListener('click', () => engine.toggleLoop());
         document.getElementById('restartBtn').addEventListener('click', () => engine.restart());
 
         // Volume
         volumeSlider.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            engine.setVolume(val);
+            engine.setVolume(parseFloat(e.target.value));
         });
 
         // Speed
@@ -1106,7 +1251,7 @@
                 engine.effects.pitch = pitchControl.value;
             }
             engine.effects.speed = val;
-            refreshEffects();
+            engine.updateSpeedPitch();
         });
 
         // Pitch
@@ -1120,7 +1265,7 @@
                 engine.effects.speed = parseFloat(speedControl.value);
             }
             engine.effects.pitch = val;
-            refreshEffects();
+            engine.updateSpeedPitch();
         });
 
         // Lock
@@ -1133,73 +1278,73 @@
                 speedValue.textContent = parseFloat(speedControl.value).toFixed(2) + 'x';
                 engine.effects.speed = parseFloat(speedControl.value);
             }
-            refreshEffects();
+            engine.updateSpeedPitch();
         });
 
         // Reverb
         reverbToggle.addEventListener('change', (e) => {
             engine.effects.reverb.active = e.target.checked;
-            refreshEffects();
+            engine.rebuildChain();
         });
         reverbDecay.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
             reverbDecayValue.textContent = val.toFixed(1) + 's';
             engine.effects.reverb.decay = val;
-            refreshEffects();
+            engine.rebuildChain(); // decay requires new impulse
         });
         reverbWet.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             reverbWetValue.textContent = val + '%';
             engine.effects.reverb.wet = val / 100;
-            refreshEffects();
+            engine.updateReverbWet();
         });
 
         // Bass
         bassToggle.addEventListener('change', (e) => {
             engine.effects.bass.active = e.target.checked;
-            refreshEffects();
+            engine.rebuildChain();
         });
         bassLevel.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             bassValue.textContent = val + 'dB';
             engine.effects.bass.gain = val;
-            refreshEffects();
+            engine.updateBass();
         });
         bassFreq.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             bassFreqValue.textContent = val + 'Hz';
             engine.effects.bass.freq = val;
-            refreshEffects();
+            engine.updateBass();
         });
 
         // Distortion
         distortionToggle.addEventListener('change', (e) => {
             engine.effects.distortion.active = e.target.checked;
-            refreshEffects();
+            engine.rebuildChain();
         });
         distortionControl.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             distortionValue.textContent = val;
             engine.effects.distortion.amount = val;
-            refreshEffects();
+            engine.updateDistortion();
         });
 
         // Delay
         delayToggle.addEventListener('change', (e) => {
             engine.effects.delay.active = e.target.checked;
-            refreshEffects();
+            engine.rebuildChain();
         });
         delayTime.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             delayTimeValue.textContent = val + 'ms';
             engine.effects.delay.time = val / 1000;
-            refreshEffects();
+            engine.updateDelay();
         });
         delayFeedback.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             delayFeedbackValue.textContent = val + '%';
             engine.effects.delay.feedback = val / 100;
-            refreshEffects();
+            engine.updateDelay();
         });
 
         // EQ
@@ -1207,19 +1352,19 @@
             const val = parseInt(e.target.value);
             eqBassValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
             engine.effects.eq.bass = val;
-            refreshEffects();
+            engine.updateEQ();
         });
         eqMid.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             eqMidValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
             engine.effects.eq.mid = val;
-            refreshEffects();
+            engine.updateEQ();
         });
         eqTreble.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             eqTrebleValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
             engine.effects.eq.treble = val;
-            refreshEffects();
+            engine.updateEQ();
         });
 
         // Export
@@ -1227,7 +1372,7 @@
             if (engine.audioBuffer) engine.exportAudio();
         });
 
-        // Reset all to default
+        // Reset
         document.getElementById('resetBtn').addEventListener('click', () => {
             speedControl.value = 1; speedValue.textContent = '1.0x';
             pitchControl.value = 0; pitchValue.textContent = '0';
@@ -1249,15 +1394,18 @@
 
             engine.lockPitchSpeed = true;
             lockPitchSpeed.checked = true;
-
-            refreshEffects();
+            
+            // Reset loop
+            engine.loop = false;
+            document.getElementById('loopBtn').className = 'btn btn-secondary';
+            
+            engine.updateSpeedPitch();
+            engine.rebuildChain();
         });
 
         // Presets
         window.applyPreset = (preset) => {
-            // Reset everything first (but keep file loaded)
             document.getElementById('resetBtn').click();
-
             switch(preset) {
                 case 'slowed':
                     speedControl.value = 0.8; speedValue.textContent = '0.80x';
@@ -1305,10 +1453,10 @@
                     delayFeedback.value = 40; delayFeedbackValue.textContent = '40%'; engine.effects.delay.feedback = 0.4;
                     break;
             }
-            // Update engine values from UI
             engine.effects.speed = parseFloat(speedControl.value);
             engine.effects.pitch = parseInt(pitchControl.value);
-            refreshEffects();
+            engine.updateSpeedPitch();
+            engine.rebuildChain();
         };
 
         // Progress bar seeking
@@ -1320,7 +1468,6 @@
             engine.seek(seekTime);
         });
 
-        // Redraw waveform on resize
         window.addEventListener('resize', () => {
             if (engine.audioBuffer) engine.drawWaveform();
         });
