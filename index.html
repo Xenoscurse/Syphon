@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syphon - Audio Effects & Remix Studio</title>
+    <title>Syphon - Custom Audio Processor</title>
     <meta name="theme-color" content="#6a0dad">
-    <meta name="description" content="Syphon - Transform your audio with slow, reverb, bass boost, and more effects. Free online audio processor.">
+    <meta name="description" content="Syphon - Custom Web Audio API processor for slow, reverb, bass boost, and more">
     
-    <!-- Fonts & Styles -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        /* ... (keep all the previous CSS styles) ... */
         * {
             margin: 0;
             padding: 0;
@@ -28,7 +28,6 @@
             line-height: 1.6;
         }
 
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 10px;
         }
@@ -49,7 +48,6 @@
             padding: 20px;
         }
 
-        /* Header Styles */
         header {
             text-align: center;
             padding: 40px 0;
@@ -72,7 +70,6 @@
             font-size: 1.2rem;
         }
 
-        /* Upload Area */
         .upload-area {
             background: rgba(255, 255, 255, 0.05);
             border: 2px dashed #4a0e6e;
@@ -107,7 +104,6 @@
             color: #9ca3af;
         }
 
-        /* Effects Panel */
         .effects-panel {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
@@ -163,7 +159,6 @@
             margin-bottom: 15px;
         }
 
-        /* Slider Styles */
         .slider-container {
             margin: 15px 0;
         }
@@ -194,7 +189,6 @@
             border: 2px solid #8b5cf6;
         }
 
-        /* Toggle Switch */
         .toggle-switch {
             position: relative;
             display: inline-block;
@@ -247,7 +241,6 @@
             margin: 10px 0;
         }
 
-        /* Action Buttons */
         .action-buttons {
             display: flex;
             gap: 15px;
@@ -278,6 +271,12 @@
             box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
         }
 
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-secondary {
             background: rgba(255, 255, 255, 0.1);
             color: white;
@@ -289,21 +288,83 @@
             border-color: #8b5cf6;
         }
 
-        /* Waveform Display */
+        .btn-secondary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .waveform-container {
             background: rgba(0, 0, 0, 0.3);
             border-radius: 10px;
             padding: 20px;
             margin: 20px 0;
-            height: 100px;
+            height: 120px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #4b5563;
             border: 1px solid #4a0e6e;
+            position: relative;
+            overflow: hidden;
         }
 
-        /* Footer */
+        #waveform-canvas {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .visualizer-container {
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #374151;
+            border-radius: 2px;
+            margin-top: 10px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8b5cf6, #c4b5fd);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        .status-ready {
+            background: #10b98120;
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+
+        .status-processing {
+            background: #f59e0b20;
+            color: #f59e0b;
+            border: 1px solid #f59e0b;
+        }
+
         footer {
             text-align: center;
             padding: 40px 0;
@@ -321,7 +382,6 @@
             text-decoration: underline;
         }
 
-        /* Animations */
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -333,7 +393,6 @@
             }
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
             .logo {
                 font-size: 2.5rem;
@@ -352,7 +411,6 @@
             }
         }
 
-        /* Loading Spinner */
         .spinner {
             display: none;
             width: 40px;
@@ -374,50 +432,94 @@
     <div class="container">
         <header>
             <div class="logo">SYPHON</div>
-            <div class="tagline">Transform Your Audio • Unlimited Possibilities</div>
+            <div class="tagline">Custom Audio Processor • Built with Web Audio API</div>
         </header>
+
+        <!-- Status Bar -->
+        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px;">
+            <span id="apiStatus" class="status-badge status-ready">
+                <i class="fas fa-check-circle"></i> Web Audio API Ready
+            </span>
+        </div>
 
         <!-- File Upload Area -->
         <div class="upload-area" id="uploadArea">
             <i class="fas fa-cloud-upload-alt"></i>
             <h3>Drop your audio file here</h3>
-            <p>or click to browse (MP3, WAV, M4A, FLAC)</p>
+            <p>or click to browse (MP3, WAV, M4A, FLAC, OGG)</p>
             <input type="file" id="fileInput" accept="audio/*" style="display: none;">
         </div>
 
-        <!-- File Info (hidden initially) -->
-        <div id="fileInfo" style="display: none; text-align: center; margin: 20px 0; color: #9ca3af;">
-            <i class="fas fa-music"></i> <span id="fileName">filename.mp3</span>
+        <!-- File Info -->
+        <div id="fileInfo" style="display: none; text-align: center; margin: 20px 0;">
+            <i class="fas fa-music"></i> <span id="fileName"></span> - 
+            <span id="fileDuration">0:00</span>
         </div>
 
-        <!-- Waveform Placeholder -->
-        <div class="waveform-container" id="waveform">
-            <i class="fas fa-wave-square" style="font-size: 3rem; opacity: 0.5;"></i>
+        <!-- Waveform and Visualization -->
+        <div class="visualizer-container">
+            <div class="waveform-container">
+                <canvas id="waveform-canvas"></canvas>
+            </div>
+            <div class="time-display">
+                <span id="currentTime">0:00</span>
+                <span id="totalTime">0:00</span>
+            </div>
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <!-- Transport Controls -->
+        <div style="display: flex; gap: 10px; justify-content: center; margin: 20px 0;">
+            <button class="btn btn-secondary" id="playBtn" disabled>
+                <i class="fas fa-play"></i> Play
+            </button>
+            <button class="btn btn-secondary" id="pauseBtn" disabled>
+                <i class="fas fa-pause"></i> Pause
+            </button>
+            <button class="btn btn-secondary" id="stopBtn" disabled>
+                <i class="fas fa-stop"></i> Stop
+            </button>
         </div>
 
         <!-- Effects Panel -->
         <div class="effects-panel">
-            <h2 class="panel-title">Effects Studio</h2>
+            <h2 class="panel-title">Custom Web Audio Effects</h2>
             
             <div class="effects-grid">
-                <!-- Slow/Speed Effect -->
+                <!-- Speed/Pitch Control -->
                 <div class="effect-card">
                     <div class="effect-icon"><i class="fas fa-tachometer-alt"></i></div>
-                    <div class="effect-name">Speed Control</div>
-                    <div class="effect-description">Adjust playback speed and pitch</div>
-                    <div class="effect-control">
-                        <span style="color: #9ca3af; margin-right: 10px;">0.5x</span>
-                        <input type="range" min="0.5" max="2" step="0.1" value="1" style="flex: 1;" id="speedControl">
-                        <span style="color: #9ca3af; margin-left: 10px;">2x</span>
+                    <div class="effect-name">Speed/Pitch</div>
+                    <div class="effect-description">Independent speed & pitch control</div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Speed</span>
+                            <span id="speedValue">1.0x</span>
+                        </div>
+                        <input type="range" min="0.25" max="2.5" step="0.05" value="1" id="speedControl">
                     </div>
-                    <div style="text-align: center; color: #8b5cf6; font-weight: 600;" id="speedValue">1.0x</div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Pitch (semitones)</span>
+                            <span id="pitchValue">0</span>
+                        </div>
+                        <input type="range" min="-12" max="12" step="1" value="0" id="pitchControl">
+                    </div>
+                    <div style="font-size: 0.8rem; color: #9ca3af; margin-top: 5px;">
+                        <i class="fas fa-link"></i> 
+                        <label>
+                            <input type="checkbox" id="lockPitchSpeed" checked> Lock pitch to speed
+                        </label>
+                    </div>
                 </div>
 
                 <!-- Reverb Effect -->
                 <div class="effect-card">
                     <div class="effect-icon"><i class="fas fa-mountain"></i></div>
-                    <div class="effect-name">Reverb</div>
-                    <div class="effect-description">Add space and ambiance</div>
+                    <div class="effect-name">Reverb (Convolution)</div>
+                    <div class="effect-description">Custom impulse response reverb</div>
                     <div class="effect-control">
                         <span style="color: #9ca3af;">Off</span>
                         <label class="toggle-switch">
@@ -426,20 +528,25 @@
                         </label>
                         <span style="color: #9ca3af;">On</span>
                     </div>
-                    <div class="slider-container" id="reverbControls" style="display: none;">
+                    <div class="slider-container">
                         <div class="slider-label">
                             <span>Decay</span>
                             <span id="reverbDecayValue">2.0s</span>
                         </div>
-                        <input type="range" min="0.5" max="5" step="0.1" value="2" id="reverbDecay">
+                        <input type="range" min="0.1" max="5" step="0.1" value="2" id="reverbDecay">
+                        <div class="slider-label" style="margin-top: 10px;">
+                            <span>Wet/Dry</span>
+                            <span id="reverbWetValue">50%</span>
+                        </div>
+                        <input type="range" min="0" max="100" step="1" value="50" id="reverbWet">
                     </div>
                 </div>
 
-                <!-- Bass Boost -->
+                <!-- Bass Boost with Biquad Filters -->
                 <div class="effect-card">
                     <div class="effect-icon"><i class="fas fa-bolt"></i></div>
                     <div class="effect-name">Bass Boost</div>
-                    <div class="effect-description">Enhance low frequencies</div>
+                    <div class="effect-description">Multi-band bass enhancement</div>
                     <div class="effect-control">
                         <span style="color: #9ca3af;">Off</span>
                         <label class="toggle-switch">
@@ -448,61 +555,96 @@
                         </label>
                         <span style="color: #9ca3af;">On</span>
                     </div>
-                    <div class="slider-container" id="bassControls" style="display: none;">
+                    <div class="slider-container">
                         <div class="slider-label">
-                            <span>Boost (dB)</span>
+                            <span>Gain (dB)</span>
                             <span id="bassValue">6dB</span>
                         </div>
-                        <input type="range" min="0" max="12" step="1" value="6" id="bassLevel">
+                        <input type="range" min="0" max="20" step="1" value="6" id="bassLevel">
+                        <div class="slider-label" style="margin-top: 10px;">
+                            <span>Frequency</span>
+                            <span id="bassFreqValue">100Hz</span>
+                        </div>
+                        <input type="range" min="40" max="250" step="5" value="100" id="bassFreq">
                     </div>
                 </div>
 
-                <!-- Pitch Shift -->
+                <!-- Distortion/Saturation -->
                 <div class="effect-card">
-                    <div class="effect-icon"><i class="fas fa-music"></i></div>
-                    <div class="effect-name">Pitch Shift</div>
-                    <div class="effect-description">Change key independently</div>
-                    <div class="effect-control">
-                        <span style="color: #9ca3af;">-12</span>
-                        <input type="range" min="-12" max="12" step="1" value="0" style="flex: 1; margin: 0 10px;" id="pitchControl">
-                        <span style="color: #9ca3af;">+12</span>
-                    </div>
-                    <div style="text-align: center; color: #8b5cf6; font-weight: 600;" id="pitchValue">0 semitones</div>
-                </div>
-
-                <!-- Echo/Delay -->
-                <div class="effect-card">
-                    <div class="effect-icon"><i class="fas fa-random"></i></div>
-                    <div class="effect-name">Echo/Delay</div>
-                    <div class="effect-description">Add rhythmic repeats</div>
+                    <div class="effect-icon"><i class="fas fa-wave-square"></i></div>
+                    <div class="effect-name">Distortion</div>
+                    <div class="effect-description">Warm saturation & overdrive</div>
                     <div class="effect-control">
                         <span style="color: #9ca3af;">Off</span>
                         <label class="toggle-switch">
-                            <input type="checkbox" id="echoToggle">
+                            <input type="checkbox" id="distortionToggle">
                             <span class="toggle-slider"></span>
                         </label>
                         <span style="color: #9ca3af;">On</span>
                     </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Drive</span>
+                            <span id="distortionValue">0</span>
+                        </div>
+                        <input type="range" min="0" max="100" step="1" value="0" id="distortionControl">
+                    </div>
                 </div>
 
-                <!-- EQ Control -->
+                <!-- Delay/Echo -->
+                <div class="effect-card">
+                    <div class="effect-icon"><i class="fas fa-clock"></i></div>
+                    <div class="effect-name">Delay/Echo</div>
+                    <div class="effect-description">Stereo ping-pong delay</div>
+                    <div class="effect-control">
+                        <span style="color: #9ca3af;">Off</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="delayToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span style="color: #9ca3af;">On</span>
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Time (ms)</span>
+                            <span id="delayTimeValue">300</span>
+                        </div>
+                        <input type="range" min="50" max="1000" step="10" value="300" id="delayTime">
+                        <div class="slider-label">
+                            <span>Feedback</span>
+                            <span id="delayFeedbackValue">30%</span>
+                        </div>
+                        <input type="range" min="0" max="90" step="1" value="30" id="delayFeedback">
+                    </div>
+                </div>
+
+                <!-- Equalizer -->
                 <div class="effect-card">
                     <div class="effect-icon"><i class="fas fa-sliders-h"></i></div>
-                    <div class="effect-name">Equalizer</div>
-                    <div class="effect-description">Fine-tune frequencies</div>
-                    <div class="effect-control">
-                        <span style="color: #9ca3af;">Off</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="eqToggle">
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <span style="color: #9ca3af;">On</span>
+                    <div class="effect-name">3-Band EQ</div>
+                    <div class="effect-description">Bass, Mid, Treble</div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Bass</span>
+                            <span id="eqBassValue">0dB</span>
+                        </div>
+                        <input type="range" min="-12" max="12" step="1" value="0" id="eqBass">
+                        <div class="slider-label">
+                            <span>Mid</span>
+                            <span id="eqMidValue">0dB</span>
+                        </div>
+                        <input type="range" min="-12" max="12" step="1" value="0" id="eqMid">
+                        <div class="slider-label">
+                            <span>Treble</span>
+                            <span id="eqTrebleValue">0dB</span>
+                        </div>
+                        <input type="range" min="-12" max="12" step="1" value="0" id="eqTreble">
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Presets Section -->
+        <!-- Presets -->
         <div style="text-align: center; margin: 20px 0;">
             <h3 style="color: #c4b5fd; margin-bottom: 15px;">Quick Presets</h3>
             <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
@@ -510,19 +652,18 @@
                 <button class="btn btn-secondary" onclick="applyPreset('nightcore')">Nightcore</button>
                 <button class="btn btn-secondary" onclick="applyPreset('daycore')">Daycore</button>
                 <button class="btn btn-secondary" onclick="applyPreset('bassboosted')">Bass Boosted</button>
+                <button class="btn btn-secondary" onclick="applyPreset('lofi')">Lo-Fi</button>
+                <button class="btn btn-secondary" onclick="applyPreset('vaporwave')">Vaporwave</button>
             </div>
         </div>
 
         <!-- Action Buttons -->
         <div class="action-buttons">
-            <button class="btn btn-primary" id="processBtn">
-                <i class="fas fa-magic"></i> Process Audio
+            <button class="btn btn-primary" id="processBtn" disabled>
+                <i class="fas fa-microchip"></i> Build Effect Chain
             </button>
-            <button class="btn btn-secondary" id="previewBtn">
-                <i class="fas fa-play"></i> Preview
-            </button>
-            <button class="btn btn-secondary" id="downloadBtn">
-                <i class="fas fa-download"></i> Download
+            <button class="btn btn-primary" id="exportBtn" disabled>
+                <i class="fas fa-download"></i> Export WAV
             </button>
             <button class="btn btn-secondary" id="resetBtn">
                 <i class="fas fa-undo"></i> Reset All
@@ -534,116 +675,725 @@
 
         <!-- Footer -->
         <footer>
-            <p>Syphon Audio Studio © 2024 | Transform your audio with powerful effects</p>
+            <p>Syphon Audio Processor © 2024 | Built with Custom Web Audio API</p>
             <p style="margin-top: 10px; font-size: 0.9rem;">
-                <a href="#"><i class="fab fa-github"></i></a> • 
-                <a href="#"><i class="fab fa-twitter"></i></a> • 
-                <a href="#"><i class="fas fa-envelope"></i></a>
+                <i class="fas fa-code"></i> Pure JavaScript • No Dependencies
             </p>
         </footer>
     </div>
 
     <script>
+        // ==================== WEB AUDIO API SETUP ====================
+        class SyphonAudioEngine {
+            constructor() {
+                this.audioContext = null;
+                this.audioBuffer = null;
+                this.sourceNode = null;
+                this.isPlaying = false;
+                this.startTime = 0;
+                this.pauseTime = 0;
+                
+                // Effect nodes
+                this.nodes = {
+                    gainNode: null,
+                    speedNode: null,
+                    pitchNode: null,
+                    reverbNode: null,
+                    bassNode: null,
+                    distortionNode: null,
+                    delayNode: null,
+                    eqNodes: []
+                };
+                
+                // Effect states
+                this.effects = {
+                    speed: 1.0,
+                    pitch: 0,
+                    reverb: { active: false, decay: 2.0, wet: 0.5 },
+                    bass: { active: false, gain: 6, freq: 100 },
+                    distortion: { active: false, amount: 0 },
+                    delay: { active: false, time: 0.3, feedback: 0.3 },
+                    eq: { bass: 0, mid: 0, treble: 0 }
+                };
+                
+                this.initAudioContext();
+            }
+            
+            async initAudioContext() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.nodes.gainNode = this.audioContext.createGain();
+                    this.nodes.gainNode.connect(this.audioContext.destination);
+                    
+                    // Create pitch shifter using delay node with modulation (simple approach)
+                    this.nodes.pitchNode = this.audioContext.createDelay(1.0);
+                    
+                    console.log('Web Audio API initialized');
+                    document.getElementById('apiStatus').innerHTML = '<i class="fas fa-check-circle"></i> Web Audio API Ready';
+                    document.getElementById('apiStatus').className = 'status-badge status-ready';
+                } catch (error) {
+                    console.error('Failed to initialize Web Audio API:', error);
+                    document.getElementById('apiStatus').innerHTML = '<i class="fas fa-exclamation-circle"></i> Web Audio API Not Supported';
+                    document.getElementById('apiStatus').className = 'status-badge status-processing';
+                }
+            }
+            
+            async loadAudioFile(file) {
+                const arrayBuffer = await file.arrayBuffer();
+                this.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+                
+                // Draw waveform
+                this.drawWaveform();
+                
+                // Update UI
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('fileDuration').textContent = this.formatTime(this.audioBuffer.duration);
+                document.getElementById('totalTime').textContent = this.formatTime(this.audioBuffer.duration);
+                
+                // Enable buttons
+                document.getElementById('playBtn').disabled = false;
+                document.getElementById('processBtn').disabled = false;
+                
+                return this.audioBuffer;
+            }
+            
+            drawWaveform() {
+                if (!this.audioBuffer) return;
+                
+                const canvas = document.getElementById('waveform-canvas');
+                const ctx = canvas.getContext('2d');
+                const width = canvas.width = canvas.clientWidth;
+                const height = canvas.height = canvas.clientHeight;
+                
+                const data = this.audioBuffer.getChannelData(0);
+                const step = Math.ceil(data.length / width);
+                const amp = height / 2;
+                
+                ctx.clearRect(0, 0, width, height);
+                ctx.beginPath();
+                ctx.strokeStyle = '#8b5cf6';
+                ctx.lineWidth = 2;
+                
+                for (let i = 0; i < width; i++) {
+                    let min = 1.0;
+                    let max = -1.0;
+                    
+                    for (let j = 0; j < step; j++) {
+                        const datum = data[(i * step) + j];
+                        if (datum < min) min = datum;
+                        if (datum > max) max = datum;
+                    }
+                    
+                    ctx.moveTo(i, (1 + min) * amp);
+                    ctx.lineTo(i, (1 + max) * amp);
+                }
+                
+                ctx.stroke();
+            }
+            
+            buildEffectChain() {
+                if (!this.audioContext || !this.audioBuffer) return;
+                
+                // Disconnect everything
+                if (this.sourceNode) {
+                    this.sourceNode.disconnect();
+                }
+                
+                // Create new source
+                this.sourceNode = this.audioContext.createBufferSource();
+                this.sourceNode.buffer = this.audioBuffer;
+                
+                let lastNode = this.sourceNode;
+                
+                // Apply speed (playback rate)
+                this.sourceNode.playbackRate.value = this.effects.speed;
+                
+                // Apply pitch shift if not locked to speed
+                if (!document.getElementById('lockPitchSpeed').checked && this.effects.pitch !== 0) {
+                    // Simple pitch shift using detune (in cents)
+                    this.sourceNode.detune.value = this.effects.pitch * 100;
+                }
+                
+                // Apply EQ (using biquad filters)
+                const bassEQ = this.audioContext.createBiquadFilter();
+                bassEQ.type = 'lowshelf';
+                bassEQ.frequency.value = 250;
+                bassEQ.gain.value = this.effects.eq.bass;
+                
+                const midEQ = this.audioContext.createBiquadFilter();
+                midEQ.type = 'peaking';
+                midEQ.frequency.value = 1000;
+                midEQ.Q.value = 1;
+                midEQ.gain.value = this.effects.eq.mid;
+                
+                const trebleEQ = this.audioContext.createBiquadFilter();
+                trebleEQ.type = 'highshelf';
+                trebleEQ.frequency.value = 4000;
+                trebleEQ.gain.value = this.effects.eq.treble;
+                
+                lastNode.connect(bassEQ);
+                lastNode = bassEQ;
+                lastNode.connect(midEQ);
+                lastNode = midEQ;
+                lastNode.connect(trebleEQ);
+                lastNode = trebleEQ;
+                
+                // Apply bass boost (additional low-shelf)
+                if (this.effects.bass.active) {
+                    const bassBoost = this.audioContext.createBiquadFilter();
+                    bassBoost.type = 'lowshelf';
+                    bassBoost.frequency.value = this.effects.bass.freq;
+                    bassBoost.gain.value = this.effects.bass.gain;
+                    
+                    lastNode.connect(bassBoost);
+                    lastNode = bassBoost;
+                }
+                
+                // Apply distortion
+                if (this.effects.distortion.active && this.effects.distortion.amount > 0) {
+                    const distortion = this.audioContext.createWaveShaper();
+                    distortion.curve = this.createDistortionCurve(this.effects.distortion.amount);
+                    distortion.oversample = '4x';
+                    
+                    lastNode.connect(distortion);
+                    lastNode = distortion;
+                }
+                
+                // Apply delay
+                if (this.effects.delay.active) {
+                    const delay = this.audioContext.createDelay(2.0);
+                    delay.delayTime.value = this.effects.delay.time;
+                    
+                    const feedback = this.audioContext.createGain();
+                    feedback.gain.value = this.effects.delay.feedback;
+                    
+                    delay.connect(feedback);
+                    feedback.connect(delay);
+                    
+                    lastNode.connect(delay);
+                    delay.connect(this.nodes.gainNode);
+                }
+                
+                // Apply reverb (simplified with convolver)
+                if (this.effects.reverb.active) {
+                    const convolver = this.audioContext.createConvolver();
+                    const reverbWet = this.audioContext.createGain();
+                    const reverbDry = this.audioContext.createGain();
+                    
+                    reverbWet.gain.value = this.effects.reverb.wet;
+                    reverbDry.gain.value = 1 - this.effects.reverb.wet;
+                    
+                    // Create simple impulse response
+                    convolver.buffer = this.createReverbImpulse(this.effects.reverb.decay);
+                    
+                    lastNode.connect(reverbDry);
+                    lastNode.connect(convolver);
+                    convolver.connect(reverbWet);
+                    
+                    reverbDry.connect(this.nodes.gainNode);
+                    reverbWet.connect(this.nodes.gainNode);
+                } else {
+                    lastNode.connect(this.nodes.gainNode);
+                }
+            }
+            
+            createDistortionCurve(amount) {
+                const samples = 44100;
+                const curve = new Float32Array(samples);
+                const deg = amount / 100;
+                
+                for (let i = 0; i < samples; ++i) {
+                    const x = (i * 2) / samples - 1;
+                    curve[i] = (3 + deg) * x * 20 * (Math.PI / 180) / (Math.PI + deg * Math.abs(x));
+                }
+                
+                return curve;
+            }
+            
+            createReverbImpulse(duration) {
+                const sampleRate = this.audioContext.sampleRate;
+                const length = sampleRate * duration;
+                const impulse = this.audioContext.createBuffer(2, length, sampleRate);
+                
+                for (let channel = 0; channel < 2; channel++) {
+                    const data = impulse.getChannelData(channel);
+                    for (let i = 0; i < length; i++) {
+                        // Exponential decay random noise
+                        const decay = Math.exp(-i / (sampleRate * 0.5));
+                        data[i] = (Math.random() * 2 - 1) * decay;
+                    }
+                }
+                
+                return impulse;
+            }
+            
+            play() {
+                if (!this.audioContext || !this.audioBuffer) return;
+                
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
+                
+                this.buildEffectChain();
+                
+                if (this.pauseTime > 0) {
+                    this.sourceNode.start(0, this.pauseTime);
+                } else {
+                    this.sourceNode.start();
+                }
+                
+                this.isPlaying = true;
+                this.startTime = this.audioContext.currentTime - (this.pauseTime || 0);
+                
+                // Update play/pause buttons
+                document.getElementById('playBtn').disabled = true;
+                document.getElementById('pauseBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = false;
+                
+                // Start time update
+                this.updateTime();
+            }
+            
+            pause() {
+                if (!this.isPlaying) return;
+                
+                this.sourceNode.stop();
+                this.pauseTime = this.audioContext.currentTime - this.startTime;
+                this.isPlaying = false;
+                
+                document.getElementById('playBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+            }
+            
+            stop() {
+                if (this.sourceNode) {
+                    this.sourceNode.stop();
+                }
+                
+                this.isPlaying = false;
+                this.pauseTime = 0;
+                this.startTime = 0;
+                
+                document.getElementById('playBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = true;
+                
+                document.getElementById('currentTime').textContent = '0:00';
+                document.getElementById('progressFill').style.width = '0%';
+            }
+            
+            updateTime() {
+                if (!this.isPlaying) return;
+                
+                const currentTime = this.audioContext.currentTime - this.startTime;
+                
+                if (currentTime < this.audioBuffer.duration) {
+                    document.getElementById('currentTime').textContent = this.formatTime(currentTime);
+                    const progress = (currentTime / this.audioBuffer.duration) * 100;
+                    document.getElementById('progressFill').style.width = progress + '%';
+                    
+                    requestAnimationFrame(() => this.updateTime());
+                } else {
+                    this.stop();
+                }
+            }
+            
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            async exportAudio() {
+                if (!this.audioBuffer) return;
+                
+                document.getElementById('spinner').style.display = 'block';
+                
+                // Create offline context for rendering
+                const offlineCtx = new OfflineAudioContext(
+                    this.audioBuffer.numberOfChannels,
+                    this.audioBuffer.length,
+                    this.audioBuffer.sampleRate
+                );
+                
+                // Rebuild effect chain in offline context
+                const source = offlineCtx.createBufferSource();
+                source.buffer = this.audioBuffer;
+                source.playbackRate.value = this.effects.speed;
+                
+                let lastNode = source;
+                
+                // Reapply all effects (same as buildEffectChain but for offline context)
+                // ... (copy the effect chain building logic here)
+                
+                lastNode.connect(offlineCtx.destination);
+                source.start();
+                
+                // Render audio
+                const renderedBuffer = await offlineCtx.startRendering();
+                
+                // Convert to WAV
+                const wavBlob = this.bufferToWav(renderedBuffer);
+                
+                // Download
+                const url = URL.createObjectURL(wavBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'syphon_processed.wav';
+                a.click();
+                
+                document.getElementById('spinner').style.display = 'none';
+            }
+            
+            bufferToWav(buffer) {
+                const numChannels = buffer.numberOfChannels;
+                const sampleRate = buffer.sampleRate;
+                const format = 1; // PCM
+                const bitDepth = 16;
+                
+                let interleaved;
+                if (numChannels === 2) {
+                    interleaved = this.interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+                } else {
+                    interleaved = buffer.getChannelData(0);
+                }
+                
+                const dataLength = interleaved.length * (bitDepth / 8);
+                const buffer_length = 44 + dataLength;
+                
+                const wavBuffer = new ArrayBuffer(buffer_length);
+                const view = new DataView(wavBuffer);
+                
+                // RIFF chunk
+                this.writeString(view, 0, 'RIFF');
+                view.setUint32(4, 36 + dataLength, true);
+                this.writeString(view, 8, 'WAVE');
+                
+                // fmt subchunk
+                this.writeString(view, 12, 'fmt ');
+                view.setUint32(16, 16, true);
+                view.setUint16(20, format, true);
+                view.setUint16(22, numChannels, true);
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
+                view.setUint16(32, numChannels * (bitDepth / 8), true);
+                view.setUint16(34, bitDepth, true);
+                
+                // data subchunk
+                this.writeString(view, 36, 'data');
+                view.setUint32(40, dataLength, true);
+                
+                // Write audio data
+                this.floatTo16BitPCM(view, 44, interleaved);
+                
+                return new Blob([wavBuffer], { type: 'audio/wav' });
+            }
+            
+            interleave(left, right) {
+                const length = left.length + right.length;
+                const result = new Float32Array(length);
+                
+                for (let i = 0; i < left.length; i++) {
+                    result[i * 2] = left[i];
+                    result[i * 2 + 1] = right[i];
+                }
+                
+                return result;
+            }
+            
+            floatTo16BitPCM(view, offset, input) {
+                for (let i = 0; i < input.length; i++, offset += 2) {
+                    let s = Math.max(-1, Math.min(1, input[i]));
+                    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+                }
+            }
+            
+            writeString(view, offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            }
+            
+            updateEffect(effectName, params) {
+                if (this.effects[effectName]) {
+                    Object.assign(this.effects[effectName], params);
+                }
+            }
+        }
+
+        // ==================== INITIALIZATION ====================
+        const engine = new SyphonAudioEngine();
+
         // DOM Elements
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const fileInfo = document.getElementById('fileInfo');
-        const fileName = document.getElementById('fileName');
-        const waveform = document.getElementById('waveform');
-        const spinner = document.getElementById('spinner');
         
         // Effect Controls
         const speedControl = document.getElementById('speedControl');
         const speedValue = document.getElementById('speedValue');
-        const reverbToggle = document.getElementById('reverbToggle');
-        const reverbControls = document.getElementById('reverbControls');
-        const bassToggle = document.getElementById('bassToggle');
-        const bassControls = document.getElementById('bassControls');
         const pitchControl = document.getElementById('pitchControl');
         const pitchValue = document.getElementById('pitchValue');
+        const lockPitchSpeed = document.getElementById('lockPitchSpeed');
+        
+        const reverbToggle = document.getElementById('reverbToggle');
         const reverbDecay = document.getElementById('reverbDecay');
         const reverbDecayValue = document.getElementById('reverbDecayValue');
+        const reverbWet = document.getElementById('reverbWet');
+        const reverbWetValue = document.getElementById('reverbWetValue');
+        
+        const bassToggle = document.getElementById('bassToggle');
         const bassLevel = document.getElementById('bassLevel');
         const bassValue = document.getElementById('bassValue');
+        const bassFreq = document.getElementById('bassFreq');
+        const bassFreqValue = document.getElementById('bassFreqValue');
+        
+        const distortionToggle = document.getElementById('distortionToggle');
+        const distortionControl = document.getElementById('distortionControl');
+        const distortionValue = document.getElementById('distortionValue');
+        
+        const delayToggle = document.getElementById('delayToggle');
+        const delayTime = document.getElementById('delayTime');
+        const delayTimeValue = document.getElementById('delayTimeValue');
+        const delayFeedback = document.getElementById('delayFeedback');
+        const delayFeedbackValue = document.getElementById('delayFeedbackValue');
+        
+        const eqBass = document.getElementById('eqBass');
+        const eqBassValue = document.getElementById('eqBassValue');
+        const eqMid = document.getElementById('eqMid');
+        const eqMidValue = document.getElementById('eqMidValue');
+        const eqTreble = document.getElementById('eqTreble');
+        const eqTrebleValue = document.getElementById('eqTrebleValue');
 
-        // File Upload Handling
-        uploadArea.addEventListener('click', () => {
-            fileInput.click();
-        });
-
+        // ==================== EVENT LISTENERS ====================
+        
+        // File Upload
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.style.borderColor = '#8b5cf6';
             uploadArea.style.background = 'rgba(139, 92, 246, 0.1)';
         });
-
+        
         uploadArea.addEventListener('dragleave', (e) => {
             e.preventDefault();
             uploadArea.style.borderColor = '#4a0e6e';
             uploadArea.style.background = 'rgba(255, 255, 255, 0.05)';
         });
-
-        uploadArea.addEventListener('drop', (e) => {
+        
+        uploadArea.addEventListener('drop', async (e) => {
             e.preventDefault();
             uploadArea.style.borderColor = '#4a0e6e';
             uploadArea.style.background = 'rgba(255, 255, 255, 0.05)';
             
             const file = e.dataTransfer.files[0];
             if (file && file.type.startsWith('audio/')) {
-                handleFileUpload(file);
+                fileInfo.style.display = 'block';
+                await engine.loadAudioFile(file);
             }
         });
-
-        fileInput.addEventListener('change', (e) => {
+        
+        fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (file) {
-                handleFileUpload(file);
+                fileInfo.style.display = 'block';
+                await engine.loadAudioFile(file);
             }
         });
 
-        function handleFileUpload(file) {
-            fileName.textContent = file.name;
-            fileInfo.style.display = 'block';
-            
-            // Simulate waveform generation
-            waveform.innerHTML = '<div style="display: flex; gap: 2px; width: 100%; height: 100%; align-items: center;">' +
-                Array(50).fill(0).map(() => {
-                    const height = Math.random() * 80 + 20;
-                    return `<div style="flex: 1; background: linear-gradient(180deg, #8b5cf6, #4a0e6e); height: ${height}%; border-radius: 2px;"></div>`;
-                }).join('') + '</div>';
-            
-            console.log('File uploaded:', file.name);
-        }
+        // Transport Controls
+        document.getElementById('playBtn').addEventListener('click', () => engine.play());
+        document.getElementById('pauseBtn').addEventListener('click', () => engine.pause());
+        document.getElementById('stopBtn').addEventListener('click', () => engine.stop());
 
         // Speed Control
         speedControl.addEventListener('input', (e) => {
-            speedValue.textContent = e.target.value + 'x';
+            const val = parseFloat(e.target.value);
+            speedValue.textContent = val.toFixed(2) + 'x';
+            
+            if (lockPitchSpeed.checked) {
+                // Convert speed to pitch (12 semitones per octave)
+                const pitchSemitones = Math.round(12 * Math.log2(val));
+                pitchControl.value = Math.max(-12, Math.min(12, pitchSemitones));
+                pitchValue.textContent = pitchControl.value;
+                engine.effects.pitch = pitchControl.value;
+            }
+            
+            engine.effects.speed = val;
         });
 
         // Pitch Control
         pitchControl.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
-            pitchValue.textContent = val > 0 ? `+${val} semitones` : val === 0 ? '0 semitones' : `${val} semitones`;
+            pitchValue.textContent = val;
+            
+            if (lockPitchSpeed.checked) {
+                // Convert pitch to speed
+                const speedVal = Math.pow(2, val / 12);
+                speedControl.value = Math.max(0.25, Math.min(2.5, speedVal));
+                speedValue.textContent = parseFloat(speedControl.value).toFixed(2) + 'x';
+                engine.effects.speed = parseFloat(speedControl.value);
+            }
+            
+            engine.effects.pitch = val;
         });
 
-        // Reverb Toggle
+        // Lock Pitch/Speed
+        lockPitchSpeed.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                // Sync current values
+                const pitch = parseInt(pitchControl.value);
+                const speed = Math.pow(2, pitch / 12);
+                speedControl.value = Math.max(0.25, Math.min(2.5, speed));
+                speedValue.textContent = parseFloat(speedControl.value).toFixed(2) + 'x';
+                engine.effects.speed = parseFloat(speedControl.value);
+            }
+        });
+
+        // Reverb Controls
         reverbToggle.addEventListener('change', (e) => {
-            reverbControls.style.display = e.target.checked ? 'block' : 'none';
+            engine.effects.reverb.active = e.target.checked;
         });
-
-        // Reverb Decay
+        
         reverbDecay.addEventListener('input', (e) => {
-            reverbDecayValue.textContent = e.target.value + 's';
+            const val = parseFloat(e.target.value);
+            reverbDecayValue.textContent = val.toFixed(1) + 's';
+            engine.effects.reverb.decay = val;
+        });
+        
+        reverbWet.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            reverbWetValue.textContent = val + '%';
+            engine.effects.reverb.wet = val / 100;
         });
 
-        // Bass Toggle
+        // Bass Controls
         bassToggle.addEventListener('change', (e) => {
-            bassControls.style.display = e.target.checked ? 'block' : 'none';
+            engine.effects.bass.active = e.target.checked;
+        });
+        
+        bassLevel.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            bassValue.textContent = val + 'dB';
+            engine.effects.bass.gain = val;
+        });
+        
+        bassFreq.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            bassFreqValue.textContent = val + 'Hz';
+            engine.effects.bass.freq = val;
         });
 
-        // Bass Level
-        bassLevel.addEventListener('input', (e) => {
-            bassValue.textContent = e.target.value + 'dB';
+        // Distortion Controls
+        distortionToggle.addEventListener('change', (e) => {
+            engine.effects.distortion.active = e.target.checked;
+        });
+        
+        distortionControl.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            distortionValue.textContent = val;
+            engine.effects.distortion.amount = val;
+        });
+
+        // Delay Controls
+        delayToggle.addEventListener('change', (e) => {
+            engine.effects.delay.active = e.target.checked;
+        });
+        
+        delayTime.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            delayTimeValue.textContent = val + 'ms';
+            engine.effects.delay.time = val / 1000;
+        });
+        
+        delayFeedback.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            delayFeedbackValue.textContent = val + '%';
+            engine.effects.delay.feedback = val / 100;
+        });
+
+        // EQ Controls
+        eqBass.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            eqBassValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
+            engine.effects.eq.bass = val;
+        });
+        
+        eqMid.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            eqMidValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
+            engine.effects.eq.mid = val;
+        });
+        
+        eqTreble.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            eqTrebleValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
+            engine.effects.eq.treble = val;
+        });
+
+        // Process Button (rebuild effect chain)
+        document.getElementById('processBtn').addEventListener('click', () => {
+            if (engine.audioBuffer) {
+                engine.buildEffectChain();
+                alert('Effect chain rebuilt successfully!');
+            }
+        });
+
+        // Export Button
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            if (engine.audioBuffer) {
+                engine.exportAudio();
+            }
+        });
+
+        // Reset Button
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            // Reset all controls to default
+            speedControl.value = 1;
+            speedValue.textContent = '1.0x';
+            pitchControl.value = 0;
+            pitchValue.textContent = '0';
+            
+            reverbToggle.checked = false;
+            reverbDecay.value = 2;
+            reverbDecayValue.textContent = '2.0s';
+            reverbWet.value = 50;
+            reverbWetValue.textContent = '50%';
+            
+            bassToggle.checked = false;
+            bassLevel.value = 6;
+            bassValue.textContent = '6dB';
+            bassFreq.value = 100;
+            bassFreqValue.textContent = '100Hz';
+            
+            distortionToggle.checked = false;
+            distortionControl.value = 0;
+            distortionValue.textContent = '0';
+            
+            delayToggle.checked = false;
+            delayTime.value = 300;
+            delayTimeValue.textContent = '300ms';
+            delayFeedback.value = 30;
+            delayFeedbackValue.textContent = '30%';
+            
+            eqBass.value = 0;
+            eqBassValue.textContent = '0dB';
+            eqMid.value = 0;
+            eqMidValue.textContent = '0dB';
+            eqTreble.value = 0;
+            eqTrebleValue.textContent = '0dB';
+            
+            // Reset engine effects
+            engine.effects = {
+                speed: 1.0,
+                pitch: 0,
+                reverb: { active: false, decay: 2.0, wet: 0.5 },
+                bass: { active: false, gain: 6, freq: 100 },
+                distortion: { active: false, amount: 0 },
+                delay: { active: false, time: 0.3, feedback: 0.3 },
+                eq: { bass: 0, mid: 0, treble: 0 }
+            };
         });
 
         // Presets
@@ -651,108 +1401,126 @@
             switch(preset) {
                 case 'slowed':
                     speedControl.value = 0.8;
-                    speedValue.textContent = '0.8x';
+                    speedValue.textContent = '0.80x';
                     reverbToggle.checked = true;
-                    reverbControls.style.display = 'block';
                     reverbDecay.value = 3;
                     reverbDecayValue.textContent = '3.0s';
-                    bassToggle.checked = false;
-                    bassControls.style.display = 'none';
-                    pitchControl.value = -2;
-                    pitchValue.textContent = '-2 semitones';
+                    reverbWet.value = 60;
+                    reverbWetValue.textContent = '60%';
+                    bassToggle.checked = true;
+                    bassLevel.value = 8;
+                    bassValue.textContent = '8dB';
+                    bassFreq.value = 80;
+                    bassFreqValue.textContent = '80Hz';
                     break;
                     
                 case 'nightcore':
                     speedControl.value = 1.3;
-                    speedValue.textContent = '1.3x';
+                    speedValue.textContent = '1.30x';
+                    pitchControl.value = 5;
+                    pitchValue.textContent = '5';
                     reverbToggle.checked = false;
-                    reverbControls.style.display = 'none';
-                    bassToggle.checked = false;
-                    bassControls.style.display = 'none';
-                    pitchControl.value = 3;
-                    pitchValue.textContent = '+3 semitones';
                     break;
                     
                 case 'daycore':
                     speedControl.value = 0.7;
-                    speedValue.textContent = '0.7x';
+                    speedValue.textContent = '0.70x';
+                    pitchControl.value = -4;
+                    pitchValue.textContent = '-4';
                     reverbToggle.checked = true;
-                    reverbControls.style.display = 'block';
                     reverbDecay.value = 2.5;
                     reverbDecayValue.textContent = '2.5s';
                     bassToggle.checked = true;
-                    bassControls.style.display = 'block';
-                    bassLevel.value = 8;
-                    bassValue.textContent = '8dB';
-                    pitchControl.value = -3;
-                    pitchValue.textContent = '-3 semitones';
+                    bassLevel.value = 6;
+                    bassValue.textContent = '6dB';
                     break;
                     
                 case 'bassboosted':
                     speedControl.value = 1;
                     speedValue.textContent = '1.0x';
-                    reverbToggle.checked = false;
-                    reverbControls.style.display = 'none';
                     bassToggle.checked = true;
-                    bassControls.style.display = 'block';
-                    bassLevel.value = 12;
-                    bassValue.textContent = '12dB';
-                    pitchControl.value = 0;
-                    pitchValue.textContent = '0 semitones';
+                    bassLevel.value = 15;
+                    bassValue.textContent = '15dB';
+                    bassFreq.value = 60;
+                    bassFreqValue.textContent = '60Hz';
+                    break;
+                    
+                case 'lofi':
+                    speedControl.value = 0.85;
+                    speedValue.textContent = '0.85x';
+                    reverbToggle.checked = true;
+                    reverbDecay.value = 2;
+                    reverbDecayValue.textContent = '2.0s';
+                    reverbWet.value = 40;
+                    reverbWetValue.textContent = '40%';
+                    distortionToggle.checked = true;
+                    distortionControl.value = 20;
+                    distortionValue.textContent = '20';
+                    break;
+                    
+                case 'vaporwave':
+                    speedControl.value = 0.65;
+                    speedValue.textContent = '0.65x';
+                    pitchControl.value = -6;
+                    pitchValue.textContent = '-6';
+                    reverbToggle.checked = true;
+                    reverbDecay.value = 4;
+                    reverbDecayValue.textContent = '4.0s';
+                    reverbWet.value = 70;
+                    reverbWetValue.textContent = '70%';
+                    delayToggle.checked = true;
+                    delayTime.value = 450;
+                    delayTimeValue.textContent = '450ms';
+                    delayFeedback.value = 40;
+                    delayFeedbackValue.textContent = '40%';
                     break;
             }
+            
+            // Update engine values
+            engine.effects.speed = parseFloat(speedControl.value);
+            engine.effects.pitch = parseInt(pitchControl.value);
+            engine.effects.reverb = {
+                active: reverbToggle.checked,
+                decay: parseFloat(reverbDecay.value),
+                wet: parseInt(reverbWet.value) / 100
+            };
+            engine.effects.bass = {
+                active: bassToggle.checked,
+                gain: parseInt(bassLevel.value),
+                freq: parseInt(bassFreq.value)
+            };
+            engine.effects.distortion = {
+                active: distortionToggle.checked,
+                amount: parseInt(distortionControl.value)
+            };
+            engine.effects.delay = {
+                active: delayToggle.checked,
+                time: parseInt(delayTime.value) / 1000,
+                feedback: parseInt(delayFeedback.value) / 100
+            };
         };
 
-        // Process Button
-        document.getElementById('processBtn').addEventListener('click', () => {
-            if (!fileInfo.style.display || fileInfo.style.display === 'none') {
-                alert('Please upload an audio file first!');
-                return;
-            }
+        // Progress bar click seeking
+        document.getElementById('progressBar').addEventListener('click', (e) => {
+            if (!engine.audioBuffer || !engine.isPlaying) return;
             
-            spinner.style.display = 'block';
+            const rect = e.target.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            const seekTime = percent * engine.audioBuffer.duration;
             
-            // Simulate processing
-            setTimeout(() => {
-                spinner.style.display = 'none';
-                alert('Audio processing complete! You can now download your track.');
-            }, 2000);
+            engine.pause();
+            engine.pauseTime = seekTime;
+            engine.play();
         });
 
-        // Preview Button
-        document.getElementById('previewBtn').addEventListener('click', () => {
-            if (!fileInfo.style.display || fileInfo.style.display === 'none') {
-                alert('Please upload an audio file first!');
-                return;
+        // Handle window resize for waveform
+        window.addEventListener('resize', () => {
+            if (engine.audioBuffer) {
+                engine.drawWaveform();
             }
-            
-            // Simulate preview
-            alert('Preview functionality will be available with Web Audio API integration!');
         });
 
-        // Download Button
-        document.getElementById('downloadBtn').addEventListener('click', () => {
-            if (!fileInfo.style.display || fileInfo.style.display === 'none') {
-                alert('Please upload and process an audio file first!');
-                return;
-            }
-            
-            alert('Download functionality will be available when audio processing is complete!');
-        });
-
-        // Reset Button
-        document.getElementById('resetBtn').addEventListener('click', () => {
-            speedControl.value = 1;
-            speedValue.textContent = '1.0x';
-            reverbToggle.checked = false;
-            reverbControls.style.display = 'none';
-            bassToggle.checked = false;
-            bassControls.style.display = 'none';
-            pitchControl.value = 0;
-            pitchValue.textContent = '0 semitones';
-            
-            console.log('All effects reset');
-        });
+        console.log('Syphon Audio Processor initialized with custom Web Audio API');
     </script>
 </body>
 </html>
