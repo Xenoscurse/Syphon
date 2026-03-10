@@ -247,7 +247,11 @@
         .effect-control {
             display: flex;
             align-items: center;
+            gap: 10px;
             margin: 10px 0;
+        }
+        .effect-control span {
+            line-height: 24px; /* match toggle height */
         }
 
         /* === BUTTONS === */
@@ -301,6 +305,24 @@
             flex-wrap: wrap;
         }
 
+        /* === VOLUME CONTROL === */
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 20px;
+            border-radius: 50px;
+            border: 1px solid #4a0e6e;
+        }
+        .volume-control i {
+            color: #8b5cf6;
+            font-size: 1.2rem;
+        }
+        .volume-control input {
+            width: 120px;
+        }
+
         /* === FOOTER & SPINNER === */
         footer {
             text-align: center;
@@ -333,6 +355,8 @@
             .effects-grid { grid-template-columns: 1fr; }
             .action-buttons { flex-direction: column; }
             .btn { width: 100%; }
+            .transport-controls { flex-direction: column; align-items: center; }
+            .volume-control { width: 100%; justify-content: center; }
         }
     </style>
 </head>
@@ -378,10 +402,15 @@
             </div>
         </div>
 
-        <!-- Combined Play/Pause and Restart Controls -->
+        <!-- Transport and Volume Controls -->
         <div class="transport-controls">
             <button class="btn btn-secondary" id="playPauseBtn" disabled><i class="fas fa-play"></i> Play</button>
             <button class="btn btn-secondary" id="restartBtn" disabled><i class="fas fa-undo-alt"></i> Restart</button>
+            <div class="volume-control">
+                <i class="fas fa-volume-down"></i>
+                <input type="range" id="volumeSlider" min="0" max="2" step="0.01" value="1">
+                <i class="fas fa-volume-up"></i>
+            </div>
         </div>
 
         <!-- Effects Panel -->
@@ -553,6 +582,7 @@
                 this.isPlaying = false;
                 this.startTime = 0;
                 this.pauseTime = 0;
+                this.masterGain = null; // for volume control
 
                 // Current effect settings (mirrors UI)
                 this.effects = {
@@ -562,7 +592,8 @@
                     bass: { active: false, gain: 6, freq: 100 },
                     distortion: { active: false, amount: 0 },
                     delay: { active: false, time: 0.3, feedback: 0.3 },
-                    eq: { bass: 0, mid: 0, treble: 0 }
+                    eq: { bass: 0, mid: 0, treble: 0 },
+                    volume: 1.0
                 };
 
                 this.lockPitchSpeed = true; // mirror checkbox
@@ -574,6 +605,10 @@
             async initAudioContext() {
                 try {
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    // Create master gain for volume
+                    this.masterGain = this.audioContext.createGain();
+                    this.masterGain.gain.value = this.effects.volume;
+                    this.masterGain.connect(this.audioContext.destination);
                     document.getElementById('engineStatus').innerHTML = '<i class="fas fa-check-circle"></i> Audio Engine Ready';
                     document.getElementById('engineStatus').className = 'status-badge status-ready';
                 } catch (error) {
@@ -652,7 +687,7 @@
                 return impulse;
             }
 
-            // Build the full effect chain and return the final node to connect to destination
+            // Build the full effect chain and return the final node to connect to master gain
             applyEffectsToSource(source, context) {
                 // Set speed and pitch
                 source.playbackRate.value = this.effects.speed;
@@ -744,9 +779,10 @@
             buildEffectChain() {
                 if (!this.audioContext || !this.audioBuffer) return;
 
-                // Stop any current playback gracefully
+                // Stop any current playback and clean up
                 if (this.sourceNode) {
                     try { this.sourceNode.stop(); } catch (e) {}
+                    this.sourceNode = null;
                 }
 
                 // Create new source
@@ -755,23 +791,19 @@
 
                 // Apply effects and connect to master gain
                 const outputNode = this.applyEffectsToSource(this.sourceNode, this.audioContext);
-                const masterGain = this.audioContext.createGain();
-                masterGain.gain.value = 1.0;
-                outputNode.connect(masterGain);
-                masterGain.connect(this.audioContext.destination);
+                outputNode.connect(this.masterGain);
             }
 
             // Rebuild chain and resume playback if playing (for real-time updates)
             async refreshEffects() {
                 if (!this.audioContext || !this.audioBuffer) return;
                 const wasPlaying = this.isPlaying;
-                const currentPos = this.pauseTime; // store before rebuilding
+                const currentPos = this.pauseTime;
                 if (wasPlaying) {
-                    this.pause(); // stops sourceNode
+                    this.pause(); // stops and nullifies sourceNode
                 }
                 this.buildEffectChain();
                 if (wasPlaying) {
-                    // Resume from same position
                     this.pauseTime = currentPos;
                     this.play();
                 }
@@ -801,14 +833,17 @@
                 this.sourceNode.stop();
                 this.pauseTime = this.audioContext.currentTime - this.startTime;
                 this.isPlaying = false;
+                // Nullify sourceNode so it can't be reused (must rebuild)
+                this.sourceNode = null;
                 this.updatePlayPauseButton();
             }
 
             restart() {
-                this.pauseTime = 0;
-                if (this.isPlaying) {
-                    this.pause(); // stop current
+                const wasPlaying = this.isPlaying;
+                if (wasPlaying) {
+                    this.pause(); // this will stop and nullify sourceNode
                 }
+                this.pauseTime = 0;
                 this.play();
             }
 
@@ -837,6 +872,7 @@
                 this.isPlaying = false;
                 this.pauseTime = 0;
                 this.startTime = 0;
+                this.sourceNode = null; // important
                 document.getElementById('currentTime').textContent = '0:00';
                 document.getElementById('progressFill').style.width = '0%';
                 this.updatePlayPauseButton();
@@ -857,6 +893,13 @@
                 }
             }
 
+            setVolume(value) {
+                this.effects.volume = value;
+                if (this.masterGain) {
+                    this.masterGain.gain.value = value;
+                }
+            }
+
             // Export processed audio as WAV
             async exportAudio() {
                 if (!this.audioBuffer) return;
@@ -873,7 +916,11 @@
                 source.buffer = this.audioBuffer;
 
                 const outputNode = this.applyEffectsToSource(source, offlineCtx);
-                outputNode.connect(offlineCtx.destination);
+                // Apply volume in offline context too
+                const offlineGain = offlineCtx.createGain();
+                offlineGain.gain.value = this.effects.volume;
+                outputNode.connect(offlineGain);
+                offlineGain.connect(offlineCtx.destination);
                 source.start();
 
                 const renderedBuffer = await offlineCtx.startRendering();
@@ -993,6 +1040,8 @@
         const eqTreble = document.getElementById('eqTreble');
         const eqTrebleValue = document.getElementById('eqTrebleValue');
 
+        const volumeSlider = document.getElementById('volumeSlider');
+
         // Helper to refresh effects after change
         function refreshEffects() {
             engine.refreshEffects();
@@ -1039,6 +1088,12 @@
             }
         });
         document.getElementById('restartBtn').addEventListener('click', () => engine.restart());
+
+        // Volume
+        volumeSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            engine.setVolume(val);
+        });
 
         // Speed
         speedControl.addEventListener('input', (e) => {
@@ -1190,6 +1245,7 @@
             eqBass.value = 0; eqBassValue.textContent = '0dB'; engine.effects.eq.bass = 0;
             eqMid.value = 0; eqMidValue.textContent = '0dB'; engine.effects.eq.mid = 0;
             eqTreble.value = 0; eqTrebleValue.textContent = '0dB'; engine.effects.eq.treble = 0;
+            volumeSlider.value = 1; engine.setVolume(1);
 
             engine.lockPitchSpeed = true;
             lockPitchSpeed.checked = true;
