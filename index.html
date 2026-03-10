@@ -1,87 +1,758 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>
-      Make Slowed+Reverb, Sped Up, Daycore, and Nightcore Remixes
-    </title>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#400549" />
-    <meta name="author" content="Alex Bainter" />
-    <meta name="description" content="The easiest way to slow down, speed up, add reverb, and change the pitch of songs in a free, online generator." data-react-helmet="true" />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://slowedandreverb.studio" />
-    <meta name="og:title" content="Make Slowed+Reverb, Sped Up, Daycore, and Nightcore Remixes" data-react-helmet="true" />
-    <meta name="og:description" content="The easiest way to slow down, speed up, add reverb, and change the pitch of songs in a free, online generator." data-react-helmet="true" />
-    <meta name="og:image" content="https://dxu8xlrecrxzu.cloudfront.net/7571664c3428780efc0b7116fad31882.png" />
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://slowedandreverb.studio" />
-    <meta property="twitter:title" content="Make Slowed+Reverb, Sped Up, Daycore, and Nightcore Remixes" data-react-helmet="true" />
-    <meta property="twitter:description" content="The easiest way to slow down, speed up, add reverb, and change the pitch of songs in a free, online generator." data-react-helmet="true" />
-    <meta property="twitter:image" content="https://dxu8xlrecrxzu.cloudfront.net/7571664c3428780efc0b7116fad31882.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&amp;display=swap" rel="stylesheet" />
-    <script async="" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0457130391447768" crossorigin="anonymous">
-    </script>
-    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48x48.png" />
-    <link rel="manifest" href="/assets/manifest.webmanifest" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#fff" />
-    <meta name="application-name" content="slowedandreverb.studio" />
-    <link rel="apple-touch-icon" sizes="57x57" href="/assets/apple-touch-icon-57x57.png" />
-    <link rel="apple-touch-icon" sizes="60x60" href="/assets/apple-touch-icon-60x60.png" />
-    <link rel="apple-touch-icon" sizes="72x72" href="/assets/apple-touch-icon-72x72.png" />
-    <link rel="apple-touch-icon" sizes="76x76" href="/assets/apple-touch-icon-76x76.png" />
-    <link rel="apple-touch-icon" sizes="114x114" href="/assets/apple-touch-icon-114x114.png" />
-    <link rel="apple-touch-icon" sizes="120x120" href="/assets/apple-touch-icon-120x120.png" />
-    <link rel="apple-touch-icon" sizes="144x144" href="/assets/apple-touch-icon-144x144.png" />
-    <link rel="apple-touch-icon" sizes="152x152" href="/assets/apple-touch-icon-152x152.png" />
-    <link rel="apple-touch-icon" sizes="167x167" href="/assets/apple-touch-icon-167x167.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon-180x180.png" />
-    <link rel="apple-touch-icon" sizes="1024x1024" href="/assets/apple-touch-icon-1024x1024.png" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="slowedandreverb.studio" />
-    <link rel="apple-touch-startup-image" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/assets/apple-touch-startup-image-640x1136.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="/assets/apple-touch-startup-image-1136x640.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/assets/apple-touch-startup-image-750x1334.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="/assets/apple-touch-startup-image-1334x750.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/assets/apple-touch-startup-image-1125x2436.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="/assets/apple-touch-startup-image-2436x1125.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/assets/apple-touch-startup-image-1170x2532.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="/assets/apple-touch-startup-image-2532x1170.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/assets/apple-touch-startup-image-828x1792.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="/assets/apple-touch-startup-image-1792x828.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/assets/apple-touch-startup-image-1242x2688.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="/assets/apple-touch-startup-image-2688x1242.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/assets/apple-touch-startup-image-1242x2208.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="/assets/apple-touch-startup-image-2208x1242.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/assets/apple-touch-startup-image-1284x2778.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="/assets/apple-touch-startup-image-2778x1284.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/assets/apple-touch-startup-image-1536x2048.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="/assets/apple-touch-startup-image-2048x1536.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/assets/apple-touch-startup-image-1620x2160.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="/assets/apple-touch-startup-image-2160x1620.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/assets/apple-touch-startup-image-1668x2388.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="/assets/apple-touch-startup-image-2388x1668.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/assets/apple-touch-startup-image-1668x2224.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="/assets/apple-touch-startup-image-2224x1668.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/assets/apple-touch-startup-image-2048x2732.png" />
-    <link rel="apple-touch-startup-image" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="/assets/apple-touch-startup-image-2732x2048.png" />
-    <meta name="msapplication-TileColor" content="#fff" />
-    <meta name="msapplication-TileImage" content="/assets/mstile-144x144.png" />
-    <meta name="msapplication-config" content="/assets/browserconfig.xml" />
-    <link rel="yandex-tableau-widget" href="/assets/yandex-browser-manifest.json" />
-    <script defer="defer" src="/main.f57909d9d94d0fbaad6d.js">
-    </script>
-    <link href="/main.62edf4396d2906c9eec4.css" rel="stylesheet" />
-  </head>
-  <body>
-    <div id="root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syphon - Audio Effects & Remix Studio</title>
+    <meta name="theme-color" content="#6a0dad">
+    <meta name="description" content="Syphon - Transform your audio with slow, reverb, bass boost, and more effects. Free online audio processor.">
+    
+    <!-- Fonts & Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a0e6e;
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6a0dad;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header Styles */
+        header {
+            text-align: center;
+            padding: 40px 0;
+            animation: fadeIn 1s ease;
+        }
+
+        .logo {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #c4b5fd, #a78bfa, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .tagline {
+            color: #9ca3af;
+            font-size: 1.2rem;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed #4a0e6e;
+            border-radius: 20px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 30px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .upload-area:hover {
+            border-color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+        }
+
+        .upload-area i {
+            font-size: 4rem;
+            color: #8b5cf6;
+            margin-bottom: 20px;
+        }
+
+        .upload-area h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .upload-area p {
+            color: #9ca3af;
+        }
+
+        /* Effects Panel */
+        .effects-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px 0;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .panel-title {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            color: #c4b5fd;
+            border-bottom: 2px solid #4a0e6e;
+            padding-bottom: 10px;
+        }
+
+        .effects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+        }
+
+        .effect-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .effect-card:hover {
+            border-color: #8b5cf6;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(139, 92, 246, 0.2);
+        }
+
+        .effect-icon {
+            font-size: 2rem;
+            color: #8b5cf6;
+            margin-bottom: 15px;
+        }
+
+        .effect-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .effect-description {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        /* Slider Styles */
+        .slider-container {
+            margin: 15px 0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: #d1d5db;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, #4a0e6e, #8b5cf6);
+            border-radius: 3px;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px #8b5cf6;
+            border: 2px solid #8b5cf6;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+            margin-right: 10px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #374151;
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #8b5cf6;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .effect-control {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: white;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid #4a0e6e;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: #8b5cf6;
+        }
+
+        /* Waveform Display */
+        .waveform-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4b5563;
+            border: 1px solid #4a0e6e;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            color: #6b7280;
+            border-top: 1px solid #374151;
+            margin-top: 40px;
+        }
+
+        footer a {
+            color: #8b5cf6;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2.5rem;
+            }
+            
+            .effects-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(139, 92, 246, 0.3);
+            border-top: 3px solid #8b5cf6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">SYPHON</div>
+            <div class="tagline">Transform Your Audio • Unlimited Possibilities</div>
+        </header>
+
+        <!-- File Upload Area -->
+        <div class="upload-area" id="uploadArea">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <h3>Drop your audio file here</h3>
+            <p>or click to browse (MP3, WAV, M4A, FLAC)</p>
+            <input type="file" id="fileInput" accept="audio/*" style="display: none;">
+        </div>
+
+        <!-- File Info (hidden initially) -->
+        <div id="fileInfo" style="display: none; text-align: center; margin: 20px 0; color: #9ca3af;">
+            <i class="fas fa-music"></i> <span id="fileName">filename.mp3</span>
+        </div>
+
+        <!-- Waveform Placeholder -->
+        <div class="waveform-container" id="waveform">
+            <i class="fas fa-wave-square" style="font-size: 3rem; opacity: 0.5;"></i>
+        </div>
+
+        <!-- Effects Panel -->
+        <div class="effects-panel">
+            <h2 class="panel-title">Effects Studio</h2>
+            
+            <div class="effects-grid">
+                <!-- Slow/Speed Effect -->
+                <div class="effect-card">
+                    <div class="effect-icon"><i class="fas fa-tachometer-alt"></i></div>
+                    <div class="effect-name">Speed Control</div>
+                    <div class="effect-description">Adjust playback speed and pitch</div>
+                    <div class="effect-control">
+                        <span style="color: #9ca3af; margin-right: 10px;">0.5x</span>
+                        <input type="range" min="0.5" max="2" step="0.1" value="1" style="flex: 1;" id="speedControl">
+                        <span style="color: #9ca3af; margin-left: 10px;">2x</span>
+                    </div>
+                    <div style="text-align: center; color: #8b5cf6; font-weight: 600;" id="speedValue">1.0x</div>
+                </div>
+
+                <!-- Reverb Effect -->
+                <div class="effect-card">
+                    <div class="effect-icon"><i class="fas fa-mountain"></i></div>
+                    <div class="effect-name">Reverb</div>
+                    <div class="effect-description">Add space and ambiance</div>
+                    <div class="effect-control">
+                        <span style="color: #9ca3af;">Off</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="reverbToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span style="color: #9ca3af;">On</span>
+                    </div>
+                    <div class="slider-container" id="reverbControls" style="display: none;">
+                        <div class="slider-label">
+                            <span>Decay</span>
+                            <span id="reverbDecayValue">2.0s</span>
+                        </div>
+                        <input type="range" min="0.5" max="5" step="0.1" value="2" id="reverbDecay">
+                    </div>
+                </div>
+
+                <!-- Bass Boost -->
+                <div class="effect-card">
+                    <div class="effect-icon"><i class="fas fa-bolt"></i></div>
+                    <div class="effect-name">Bass Boost</div>
+                    <div class="effect-description">Enhance low frequencies</div>
+                    <div class="effect-control">
+                        <span style="color: #9ca3af;">Off</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="bassToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span style="color: #9ca3af;">On</span>
+                    </div>
+                    <div class="slider-container" id="bassControls" style="display: none;">
+                        <div class="slider-label">
+                            <span>Boost (dB)</span>
+                            <span id="bassValue">6dB</span>
+                        </div>
+                        <input type="range" min="0" max="12" step="1" value="6" id="bassLevel">
+                    </div>
+                </div>
+
+                <!-- Pitch Shift -->
+                <div class="effect-card">
+                    <div class="effect-icon"><i class="fas fa-music"></i></div>
+                    <div class="effect-name">Pitch Shift</div>
+                    <div class="effect-description">Change key independently</div>
+                    <div class="effect-control">
+                        <span style="color: #9ca3af;">-12</span>
+                        <input type="range" min="-12" max="12" step="1" value="0" style="flex: 1; margin: 0 10px;" id="pitchControl">
+                        <span style="color: #9ca3af;">+12</span>
+                    </div>
+                    <div style="text-align: center; color: #8b5cf6; font-weight: 600;" id="pitchValue">0 semitones</div>
+                </div>
+
+                <!-- Echo/Delay -->
+                <div class="effect-card">
+                    <div class="effect-icon"><i class="fas fa-random"></i></div>
+                    <div class="effect-name">Echo/Delay</div>
+                    <div class="effect-description">Add rhythmic repeats</div>
+                    <div class="effect-control">
+                        <span style="color: #9ca3af;">Off</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="echoToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span style="color: #9ca3af;">On</span>
+                    </div>
+                </div>
+
+                <!-- EQ Control -->
+                <div class="effect-card">
+                    <div class="effect-icon"><i class="fas fa-sliders-h"></i></div>
+                    <div class="effect-name">Equalizer</div>
+                    <div class="effect-description">Fine-tune frequencies</div>
+                    <div class="effect-control">
+                        <span style="color: #9ca3af;">Off</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="eqToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span style="color: #9ca3af;">On</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Presets Section -->
+        <div style="text-align: center; margin: 20px 0;">
+            <h3 style="color: #c4b5fd; margin-bottom: 15px;">Quick Presets</h3>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-secondary" onclick="applyPreset('slowed')">Slowed + Reverb</button>
+                <button class="btn btn-secondary" onclick="applyPreset('nightcore')">Nightcore</button>
+                <button class="btn btn-secondary" onclick="applyPreset('daycore')">Daycore</button>
+                <button class="btn btn-secondary" onclick="applyPreset('bassboosted')">Bass Boosted</button>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn btn-primary" id="processBtn">
+                <i class="fas fa-magic"></i> Process Audio
+            </button>
+            <button class="btn btn-secondary" id="previewBtn">
+                <i class="fas fa-play"></i> Preview
+            </button>
+            <button class="btn btn-secondary" id="downloadBtn">
+                <i class="fas fa-download"></i> Download
+            </button>
+            <button class="btn btn-secondary" id="resetBtn">
+                <i class="fas fa-undo"></i> Reset All
+            </button>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="spinner" id="spinner"></div>
+
+        <!-- Footer -->
+        <footer>
+            <p>Syphon Audio Studio © 2024 | Transform your audio with powerful effects</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">
+                <a href="#"><i class="fab fa-github"></i></a> • 
+                <a href="#"><i class="fab fa-twitter"></i></a> • 
+                <a href="#"><i class="fas fa-envelope"></i></a>
+            </p>
+        </footer>
     </div>
-  </body>
+
+    <script>
+        // DOM Elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const waveform = document.getElementById('waveform');
+        const spinner = document.getElementById('spinner');
+        
+        // Effect Controls
+        const speedControl = document.getElementById('speedControl');
+        const speedValue = document.getElementById('speedValue');
+        const reverbToggle = document.getElementById('reverbToggle');
+        const reverbControls = document.getElementById('reverbControls');
+        const bassToggle = document.getElementById('bassToggle');
+        const bassControls = document.getElementById('bassControls');
+        const pitchControl = document.getElementById('pitchControl');
+        const pitchValue = document.getElementById('pitchValue');
+        const reverbDecay = document.getElementById('reverbDecay');
+        const reverbDecayValue = document.getElementById('reverbDecayValue');
+        const bassLevel = document.getElementById('bassLevel');
+        const bassValue = document.getElementById('bassValue');
+
+        // File Upload Handling
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#8b5cf6';
+            uploadArea.style.background = 'rgba(139, 92, 246, 0.1)';
+        });
+
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#4a0e6e';
+            uploadArea.style.background = 'rgba(255, 255, 255, 0.05)';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#4a0e6e';
+            uploadArea.style.background = 'rgba(255, 255, 255, 0.05)';
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('audio/')) {
+                handleFileUpload(file);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFileUpload(file);
+            }
+        });
+
+        function handleFileUpload(file) {
+            fileName.textContent = file.name;
+            fileInfo.style.display = 'block';
+            
+            // Simulate waveform generation
+            waveform.innerHTML = '<div style="display: flex; gap: 2px; width: 100%; height: 100%; align-items: center;">' +
+                Array(50).fill(0).map(() => {
+                    const height = Math.random() * 80 + 20;
+                    return `<div style="flex: 1; background: linear-gradient(180deg, #8b5cf6, #4a0e6e); height: ${height}%; border-radius: 2px;"></div>`;
+                }).join('') + '</div>';
+            
+            console.log('File uploaded:', file.name);
+        }
+
+        // Speed Control
+        speedControl.addEventListener('input', (e) => {
+            speedValue.textContent = e.target.value + 'x';
+        });
+
+        // Pitch Control
+        pitchControl.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            pitchValue.textContent = val > 0 ? `+${val} semitones` : val === 0 ? '0 semitones' : `${val} semitones`;
+        });
+
+        // Reverb Toggle
+        reverbToggle.addEventListener('change', (e) => {
+            reverbControls.style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        // Reverb Decay
+        reverbDecay.addEventListener('input', (e) => {
+            reverbDecayValue.textContent = e.target.value + 's';
+        });
+
+        // Bass Toggle
+        bassToggle.addEventListener('change', (e) => {
+            bassControls.style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        // Bass Level
+        bassLevel.addEventListener('input', (e) => {
+            bassValue.textContent = e.target.value + 'dB';
+        });
+
+        // Presets
+        window.applyPreset = (preset) => {
+            switch(preset) {
+                case 'slowed':
+                    speedControl.value = 0.8;
+                    speedValue.textContent = '0.8x';
+                    reverbToggle.checked = true;
+                    reverbControls.style.display = 'block';
+                    reverbDecay.value = 3;
+                    reverbDecayValue.textContent = '3.0s';
+                    bassToggle.checked = false;
+                    bassControls.style.display = 'none';
+                    pitchControl.value = -2;
+                    pitchValue.textContent = '-2 semitones';
+                    break;
+                    
+                case 'nightcore':
+                    speedControl.value = 1.3;
+                    speedValue.textContent = '1.3x';
+                    reverbToggle.checked = false;
+                    reverbControls.style.display = 'none';
+                    bassToggle.checked = false;
+                    bassControls.style.display = 'none';
+                    pitchControl.value = 3;
+                    pitchValue.textContent = '+3 semitones';
+                    break;
+                    
+                case 'daycore':
+                    speedControl.value = 0.7;
+                    speedValue.textContent = '0.7x';
+                    reverbToggle.checked = true;
+                    reverbControls.style.display = 'block';
+                    reverbDecay.value = 2.5;
+                    reverbDecayValue.textContent = '2.5s';
+                    bassToggle.checked = true;
+                    bassControls.style.display = 'block';
+                    bassLevel.value = 8;
+                    bassValue.textContent = '8dB';
+                    pitchControl.value = -3;
+                    pitchValue.textContent = '-3 semitones';
+                    break;
+                    
+                case 'bassboosted':
+                    speedControl.value = 1;
+                    speedValue.textContent = '1.0x';
+                    reverbToggle.checked = false;
+                    reverbControls.style.display = 'none';
+                    bassToggle.checked = true;
+                    bassControls.style.display = 'block';
+                    bassLevel.value = 12;
+                    bassValue.textContent = '12dB';
+                    pitchControl.value = 0;
+                    pitchValue.textContent = '0 semitones';
+                    break;
+            }
+        };
+
+        // Process Button
+        document.getElementById('processBtn').addEventListener('click', () => {
+            if (!fileInfo.style.display || fileInfo.style.display === 'none') {
+                alert('Please upload an audio file first!');
+                return;
+            }
+            
+            spinner.style.display = 'block';
+            
+            // Simulate processing
+            setTimeout(() => {
+                spinner.style.display = 'none';
+                alert('Audio processing complete! You can now download your track.');
+            }, 2000);
+        });
+
+        // Preview Button
+        document.getElementById('previewBtn').addEventListener('click', () => {
+            if (!fileInfo.style.display || fileInfo.style.display === 'none') {
+                alert('Please upload an audio file first!');
+                return;
+            }
+            
+            // Simulate preview
+            alert('Preview functionality will be available with Web Audio API integration!');
+        });
+
+        // Download Button
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            if (!fileInfo.style.display || fileInfo.style.display === 'none') {
+                alert('Please upload and process an audio file first!');
+                return;
+            }
+            
+            alert('Download functionality will be available when audio processing is complete!');
+        });
+
+        // Reset Button
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            speedControl.value = 1;
+            speedValue.textContent = '1.0x';
+            reverbToggle.checked = false;
+            reverbControls.style.display = 'none';
+            bassToggle.checked = false;
+            bassControls.style.display = 'none';
+            pitchControl.value = 0;
+            pitchValue.textContent = '0 semitones';
+            
+            console.log('All effects reset');
+        });
+    </script>
+</body>
 </html>
