@@ -626,7 +626,7 @@
                     this.masterGain = this.audioContext.createGain();
                     this.masterGain.gain.value = this.effects.volume;
                     this.masterGain.connect(this.audioContext.destination);
-                    document.getElementById('engineStatus').innerHTML = '<i class="fas fa-check-circle"></i> Audio Engine Ready';
+                    document.getElementById('engineStatus').innerHTML = '<i class="fas fa-check-circle"></i> 5 Supported Files';
                     document.getElementById('engineStatus').className = 'status-badge status-ready';
                 } catch (error) {
                     console.error('Audio context failed:', error);
