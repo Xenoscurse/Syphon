@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* (styles remain exactly as before – unchanged) */
+        /* (styles unchanged) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
@@ -507,7 +507,7 @@
                     </div>
                 </div>
 
-                <!-- Distortion -->
+                <!-- Distortion (fixed) -->
                 <div class="effect-card" id="card-distortion">
                     <div class="effect-header" onclick="toggleDescription('distortion-desc')">
                         <i class="fas fa-wave-square effect-icon"></i>
@@ -515,7 +515,7 @@
                         <i class="fas fa-chevron-down effect-description-toggle" id="distortion-desc-icon"></i>
                     </div>
                     <div class="effect-description-content" id="distortion-desc">
-                        Adds warm saturation or aggressive overdrive. Based on wave‑shaping with 4x oversampling.
+                        Adds warm saturation or aggressive overdrive. Based on tanh wave‑shaping for smooth clipping.
                     </div>
                     <div class="effect-control">
                         <span>Off</span>
@@ -581,7 +581,7 @@
                     </div>
                 </div>
 
-                <!-- Fade In/Out (fixed) -->
+                <!-- Fade In/Out -->
                 <div class="effect-card" id="card-fade">
                     <div class="effect-header" onclick="toggleDescription('fade-desc')">
                         <i class="fas fa-arrow-right-arrow-left effect-icon"></i>
@@ -624,7 +624,7 @@
                     </div>
                 </div>
 
-                <!-- Center Channel (Vocals Only) - NEW -->
+                <!-- Center Channel (Vocals Only) - fixed -->
                 <div class="effect-card" id="card-center">
                     <div class="effect-header" onclick="toggleDescription('center-desc')">
                         <i class="fas fa-microphone effect-icon"></i>
@@ -705,15 +705,14 @@
                 this.pauseTime = 0;
                 this.masterGain = null;
                 this.loop = false;
-                this.fadeOutTimeout = null; // for canceling fade-out
+                this.fadeOutTimeout = null;
 
-                // Store references to audio nodes for real‑time updates
                 this.nodes = {
                     bassEQ: null,
                     midEQ: null,
                     trebleEQ: null,
                     bassBoost: null,
-                    bassClipper: null, // for soft clipping
+                    bassClipper: null,
                     distortion: null,
                     delay: null,
                     delayFeedback: null,
@@ -724,11 +723,10 @@
                         reverbSum: null
                     },
                     fadeGain: null,
-                    vocalRemover: null, // will hold mid/side nodes
+                    vocalRemover: null,
                     center: null
                 };
 
-                // Current effect settings
                 this.effects = {
                     speed: 1.0,
                     pitch: 0,
@@ -827,13 +825,14 @@
                 ctx.stroke();
             }
 
+            // New distortion curve: tanh for smooth saturation
             createDistortionCurve(amount) {
                 const samples = 44100;
                 const curve = new Float32Array(samples);
-                const k = amount / 100;
+                const drive = Math.max(1, amount / 10); // scale drive
                 for (let i = 0; i < samples; ++i) {
-                    const x = (i * 2) / samples - 1;
-                    curve[i] = (3 + k) * x * 20 * Math.PI / 180 / (Math.PI + k * Math.abs(x));
+                    let x = (i * 2) / samples - 1;
+                    curve[i] = Math.tanh(x * drive);
                 }
                 return curve;
             }
@@ -852,9 +851,8 @@
                 return impulse;
             }
 
-            // Build mid/side processor
+            // Correct mid/side processor
             createMidSideProcessor(inputNode, type, strength) {
-                // type: 'vocalRemover' (reduce mid) or 'center' (reduce side)
                 const splitter = this.audioContext.createChannelSplitter(2);
                 const leftGain = this.audioContext.createGain();
                 const rightGain = this.audioContext.createGain();
@@ -866,54 +864,46 @@
                 splitter.connect(leftGain, 0);
                 splitter.connect(rightGain, 1);
 
-                // Create mid and side signals
-                // mid = (L + R) / 2, side = (L - R) / 2
-                // We'll use a gain node to sum and difference
-                const sumGain = this.audioContext.createGain();
-                const diffGain = this.audioContext.createGain();
-                sumGain.gain.value = 0.5;
-                diffGain.gain.value = 0.5;
+                // Create mid = (L + R) * 0.5
+                const midSum = this.audioContext.createGain();
+                midSum.gain.value = 0.5;
+                leftGain.connect(midSum);
+                rightGain.connect(midSum);
+                midSum.connect(midGain);
 
-                leftGain.connect(sumGain);
-                rightGain.connect(sumGain);
-                leftGain.connect(diffGain);
-                rightGain.connect(diffGain); // need to invert right for difference
-                // To get L - R, we need to invert right before summing with left.
-                // Better: create a separate inverter.
+                // Create side = (L - R) * 0.5
+                const sideDiff = this.audioContext.createGain();
+                sideDiff.gain.value = 0.5;
                 const inverter = this.audioContext.createGain();
                 inverter.gain.value = -1;
+                leftGain.connect(sideDiff);
                 rightGain.connect(inverter);
-                inverter.connect(diffGain);
-                leftGain.connect(diffGain); // now diffGain gets L + (-R) = L - R
+                inverter.connect(sideDiff);
+                sideDiff.connect(sideGain);
 
-                // Now sumGain has (L+R)/2, diffGain has (L-R)/2
-
-                // Apply gains based on effect
+                // Apply effect gains
                 if (type === 'vocalRemover') {
                     midGain.gain.value = 1 - strength; // reduce mid
-                    sideGain.gain.value = 1;           // keep side
+                    sideGain.gain.value = 1;            // keep side
                 } else if (type === 'center') {
-                    midGain.gain.value = 1;             // keep mid
-                    sideGain.gain.value = 1 - strength; // reduce side
+                    midGain.gain.value = 1;              // keep mid
+                    sideGain.gain.value = 1 - strength;  // reduce side
                 }
 
-                sumGain.connect(midGain);
-                diffGain.connect(sideGain);
+                // Recombine: L = mid + side, R = mid - side
+                const leftOut = this.audioContext.createGain();
+                const rightOut = this.audioContext.createGain();
+                const sideInvert = this.audioContext.createGain();
+                sideInvert.gain.value = -1;
 
-                // Recombine to stereo: L = mid + side, R = mid - side
-                const leftRecombine = this.audioContext.createGain();
-                const rightRecombine = this.audioContext.createGain();
-                const sideInverter = this.audioContext.createGain();
-                sideInverter.gain.value = -1;
+                midGain.connect(leftOut);
+                sideGain.connect(leftOut);
+                midGain.connect(rightOut);
+                sideGain.connect(sideInvert);
+                sideInvert.connect(rightOut);
 
-                midGain.connect(leftRecombine);
-                sideGain.connect(leftRecombine);
-                midGain.connect(rightRecombine);
-                sideGain.connect(sideInverter);
-                sideInverter.connect(rightRecombine);
-
-                leftRecombine.connect(merger, 0, 0);
-                rightRecombine.connect(merger, 0, 1);
+                leftOut.connect(merger, 0, 0);
+                rightOut.connect(merger, 0, 1);
 
                 inputNode.connect(splitter);
 
@@ -924,7 +914,6 @@
                 };
             }
 
-            // Build the full effect chain
             buildEffectChain() {
                 if (!this.audioContext || !this.audioBuffer) return;
 
@@ -942,20 +931,20 @@
 
                 let lastNode = this.sourceNode;
 
-                // ---- Vocal Remover (mid/side) ----
+                // ---- Vocal Remover ----
                 if (this.effects.vocalRemover.active) {
-                    const processor = this.createMidSideProcessor(lastNode, 'vocalRemover', this.effects.vocalRemover.strength);
-                    lastNode = processor.output;
-                    this.nodes.vocalRemover = processor;
+                    const proc = this.createMidSideProcessor(lastNode, 'vocalRemover', this.effects.vocalRemover.strength);
+                    lastNode = proc.output;
+                    this.nodes.vocalRemover = proc;
                 } else {
                     this.nodes.vocalRemover = null;
                 }
 
-                // ---- Center Channel (mid/side) ----
+                // ---- Center Channel ----
                 if (this.effects.center.active) {
-                    const processor = this.createMidSideProcessor(lastNode, 'center', this.effects.center.strength);
-                    lastNode = processor.output;
-                    this.nodes.center = processor;
+                    const proc = this.createMidSideProcessor(lastNode, 'center', this.effects.center.strength);
+                    lastNode = proc.output;
+                    this.nodes.center = proc;
                 } else {
                     this.nodes.center = null;
                 }
@@ -988,7 +977,7 @@
                 this.nodes.midEQ = midEQ;
                 this.nodes.trebleEQ = trebleEQ;
 
-                // ---- Bass Boost with soft clipping ----
+                // ---- Bass Boost ----
                 if (this.effects.bass.active) {
                     const bassBoost = this.audioContext.createBiquadFilter();
                     bassBoost.type = 'lowshelf';
@@ -998,7 +987,7 @@
                     lastNode = bassBoost;
                     this.nodes.bassBoost = bassBoost;
 
-                    // Soft clipper if gain > 12 dB
+                    // Soft clipper for high gain
                     if (this.effects.bass.gain > 12) {
                         const clipper = this.audioContext.createWaveShaper();
                         const curve = new Float32Array(44100);
@@ -1073,24 +1062,19 @@
 
                 // ---- Fade Gain ----
                 const fadeGain = this.audioContext.createGain();
-                fadeGain.gain.value = 1; // default no fade
+                fadeGain.gain.value = 1;
                 lastNode.connect(fadeGain);
                 lastNode = fadeGain;
                 this.nodes.fadeGain = fadeGain;
 
-                // Connect to master gain
                 lastNode.connect(this.masterGain);
             }
 
-            // ---- Real‑time updates ----
+            // Real‑time updates
             updateSpeedPitch() {
                 if (this.sourceNode) {
                     this.sourceNode.playbackRate.value = this.effects.speed;
-                    if (!this.lockPitchSpeed) {
-                        this.sourceNode.detune.value = this.effects.pitch * 100;
-                    } else {
-                        this.sourceNode.detune.value = 0;
-                    }
+                    this.sourceNode.detune.value = (!this.lockPitchSpeed) ? this.effects.pitch * 100 : 0;
                 }
             }
 
@@ -1105,7 +1089,6 @@
                     this.nodes.bassBoost.frequency.value = this.effects.bass.freq;
                     this.nodes.bassBoost.gain.value = this.effects.bass.gain;
                 }
-                // clipper is recreated on rebuild, not updated live
             }
 
             updateDistortion() {
@@ -1115,12 +1098,8 @@
             }
 
             updateDelay() {
-                if (this.nodes.delay) {
-                    this.nodes.delay.delayTime.value = this.effects.delay.time;
-                }
-                if (this.nodes.delayFeedback) {
-                    this.nodes.delayFeedback.gain.value = this.effects.delay.feedback;
-                }
+                if (this.nodes.delay) this.nodes.delay.delayTime.value = this.effects.delay.time;
+                if (this.nodes.delayFeedback) this.nodes.delayFeedback.gain.value = this.effects.delay.feedback;
             }
 
             updateReverbWet() {
@@ -1164,7 +1143,6 @@
                 this.isPlaying = true;
                 this.startTime = this.audioContext.currentTime - offset;
 
-                // Apply fade in
                 if (this.fadeInTime > 0 && this.nodes.fadeGain) {
                     this.nodes.fadeGain.gain.cancelScheduledValues(this.audioContext.currentTime);
                     this.nodes.fadeGain.gain.setValueAtTime(0, this.audioContext.currentTime);
@@ -1180,7 +1158,6 @@
             pause() {
                 if (!this.isPlaying) return;
 
-                // Clear any pending fade-out timeout
                 if (this.fadeOutTimeout) {
                     clearTimeout(this.fadeOutTimeout);
                     this.fadeOutTimeout = null;
@@ -1189,24 +1166,18 @@
                 const stopTime = this.audioContext.currentTime + this.fadeOutTime;
 
                 if (this.fadeOutTime > 0 && this.nodes.fadeGain) {
-                    // Ramp down
                     this.nodes.fadeGain.gain.cancelScheduledValues(this.audioContext.currentTime);
                     this.nodes.fadeGain.gain.setValueAtTime(this.nodes.fadeGain.gain.value, this.audioContext.currentTime);
                     this.nodes.fadeGain.gain.linearRampToValueAtTime(0, stopTime);
-                    // Schedule stop at the end of the ramp
                     this.sourceNode.stop(stopTime);
                 } else {
                     this.sourceNode.stop();
                 }
 
-                // Update state after the fade (or immediately)
-                const actualStopTime = this.fadeOutTime > 0 ? stopTime : this.audioContext.currentTime;
-                // We'll use a timeout to update state, but for accuracy we can use a timer
-                // However, using the audio context time is better: we can schedule a callback with setTimeout relative to currentTime.
-                const delay = (actualStopTime - this.audioContext.currentTime) * 1000;
+                const delay = this.fadeOutTime * 1000;
                 if (delay > 0) {
                     this.fadeOutTimeout = setTimeout(() => {
-                        this.pauseTime = this.audioContext.currentTime - this.startTime; // approximate
+                        this.pauseTime = this.audioContext.currentTime - this.startTime;
                         this.isPlaying = false;
                         this.sourceNode = null;
                         this.updatePlayPauseButton();
@@ -1260,7 +1231,6 @@
                 document.getElementById('currentTime').textContent = '0:00';
                 document.getElementById('progressFill').style.width = '0%';
                 this.updatePlayPauseButton();
-                // Reset fade gain
                 if (this.nodes.fadeGain) {
                     this.nodes.fadeGain.gain.cancelScheduledValues(this.audioContext.currentTime);
                     this.nodes.fadeGain.gain.setValueAtTime(1, this.audioContext.currentTime);
@@ -1275,11 +1245,7 @@
 
             updatePlayPauseButton() {
                 const btn = document.getElementById('playPauseBtn');
-                if (this.isPlaying) {
-                    btn.innerHTML = '<i class="fas fa-pause"></i> Pause';
-                } else {
-                    btn.innerHTML = '<i class="fas fa-play"></i> Play';
-                }
+                btn.innerHTML = this.isPlaying ? '<i class="fas fa-pause"></i> Pause' : '<i class="fas fa-play"></i> Play';
             }
 
             toggleLoop() {
@@ -1319,14 +1285,13 @@
 
                 let last = source;
 
-                // Vocal Remover (offline)
+                // Vocal Remover (offline) – simplified, just pass through for export
+                // (Full offline implementation would require replicating the graph, but we'll keep it simple for now)
                 if (this.effects.vocalRemover.active) {
-                    const processor = this.createMidSideProcessorForOffline(offlineCtx, last, 'vocalRemover', this.effects.vocalRemover.strength);
-                    last = processor;
+                    // For simplicity, we ignore in export – user can export original and apply externally.
                 }
                 if (this.effects.center.active) {
-                    const processor = this.createMidSideProcessorForOffline(offlineCtx, last, 'center', this.effects.center.strength);
-                    last = processor;
+                    // Same as above
                 }
 
                 // EQ
@@ -1376,7 +1341,6 @@
                     last = sum;
                 }
 
-                // Fade gain not needed in export (envelopes would be complex)
                 const offlineGain = offlineCtx.createGain();
                 offlineGain.gain.value = this.effects.volume;
                 last.connect(offlineGain);
@@ -1394,14 +1358,6 @@
                 URL.revokeObjectURL(url);
 
                 document.getElementById('spinner').style.display = 'none';
-            }
-
-            // Helper for offline mid/side processing (simplified)
-            createMidSideProcessorForOffline(ctx, inputNode, type, strength) {
-                // In offline, we can't easily create a subgraph, so we'll just return inputNode
-                // This is a simplification – a full implementation would replicate the live graph.
-                // For now, we'll just pass through.
-                return inputNode;
             }
 
             bufferToWav(buffer) {
@@ -1467,12 +1423,10 @@
         // ==================== INITIALIZATION ====================
         const engine = new SyphonEngine();
 
-        // DOM elements
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const fileInfo = document.getElementById('fileInfo');
 
-        // Effect controls
         const speedControl = document.getElementById('speedControl');
         const speedValue = document.getElementById('speedValue');
         const pitchControl = document.getElementById('pitchControl');
@@ -1510,25 +1464,20 @@
 
         const volumeSlider = document.getElementById('volumeSlider');
 
-        // Fade controls
         const fadeIn = document.getElementById('fadeIn');
         const fadeInValue = document.getElementById('fadeInValue');
         const fadeOut = document.getElementById('fadeOut');
         const fadeOutValue = document.getElementById('fadeOutValue');
 
-        // Vocal remover
         const vocalRemoverToggle = document.getElementById('vocalRemoverToggle');
         const vocalRemoverStrength = document.getElementById('vocalRemoverStrength');
         const vocalRemoverValue = document.getElementById('vocalRemoverValue');
 
-        // Center channel
         const centerToggle = document.getElementById('centerToggle');
         const centerStrength = document.getElementById('centerStrength');
         const centerValue = document.getElementById('centerValue');
 
-        // ==================== EVENT HANDLERS ====================
-
-        // File upload
+        // Event handlers (same as before, but using the fixed update methods)
         uploadArea.addEventListener('click', () => fileInput.click());
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -1558,19 +1507,14 @@
             }
         });
 
-        // Transport
         document.getElementById('playPauseBtn').addEventListener('click', () => {
             if (engine.isPlaying) engine.pause(); else engine.play();
         });
         document.getElementById('loopBtn').addEventListener('click', () => engine.toggleLoop());
         document.getElementById('restartBtn').addEventListener('click', () => engine.restart());
 
-        // Volume
-        volumeSlider.addEventListener('input', (e) => {
-            engine.setVolume(parseFloat(e.target.value));
-        });
+        volumeSlider.addEventListener('input', (e) => engine.setVolume(parseFloat(e.target.value)));
 
-        // Speed
         speedControl.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
             speedValue.textContent = val.toFixed(2) + 'x';
@@ -1584,7 +1528,6 @@
             engine.updateSpeedPitch();
         });
 
-        // Pitch
         pitchControl.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             pitchValue.textContent = val;
@@ -1598,7 +1541,6 @@
             engine.updateSpeedPitch();
         });
 
-        // Lock
         lockPitchSpeed.addEventListener('change', (e) => {
             engine.lockPitchSpeed = e.target.checked;
             if (e.target.checked) {
@@ -1611,7 +1553,6 @@
             engine.updateSpeedPitch();
         });
 
-        // Reverb
         reverbToggle.addEventListener('change', (e) => {
             engine.effects.reverb.active = e.target.checked;
             engine.rebuildChain();
@@ -1629,7 +1570,6 @@
             engine.updateReverbWet();
         });
 
-        // Bass
         bassToggle.addEventListener('change', (e) => {
             engine.effects.bass.active = e.target.checked;
             engine.rebuildChain();
@@ -1647,7 +1587,6 @@
             engine.updateBass();
         });
 
-        // Distortion
         distortionToggle.addEventListener('change', (e) => {
             engine.effects.distortion.active = e.target.checked;
             engine.rebuildChain();
@@ -1659,7 +1598,6 @@
             engine.updateDistortion();
         });
 
-        // Delay
         delayToggle.addEventListener('change', (e) => {
             engine.effects.delay.active = e.target.checked;
             engine.rebuildChain();
@@ -1677,7 +1615,6 @@
             engine.updateDelay();
         });
 
-        // EQ
         eqBass.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             eqBassValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
@@ -1697,7 +1634,6 @@
             engine.updateEQ();
         });
 
-        // Fade
         fadeIn.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
             fadeInValue.textContent = val.toFixed(1) + 's';
@@ -1709,7 +1645,6 @@
             engine.setFadeOut(val);
         });
 
-        // Vocal Remover
         vocalRemoverToggle.addEventListener('change', (e) => {
             engine.effects.vocalRemover.active = e.target.checked;
             engine.rebuildChain();
@@ -1721,7 +1656,6 @@
             engine.updateVocalRemover();
         });
 
-        // Center Channel
         centerToggle.addEventListener('change', (e) => {
             engine.effects.center.active = e.target.checked;
             engine.rebuildChain();
@@ -1733,12 +1667,10 @@
             engine.updateCenter();
         });
 
-        // Export
         document.getElementById('exportBtn').addEventListener('click', () => {
             if (engine.audioBuffer) engine.exportAudio();
         });
 
-        // Reset
         document.getElementById('resetBtn').addEventListener('click', () => {
             speedControl.value = 1; speedValue.textContent = '1.0x';
             pitchControl.value = 0; pitchValue.textContent = '0';
@@ -1774,7 +1706,6 @@
             engine.rebuildChain();
         });
 
-        // Presets
         window.applyPreset = (preset) => {
             document.getElementById('resetBtn').click();
             switch(preset) {
@@ -1830,7 +1761,6 @@
             engine.rebuildChain();
         };
 
-        // Progress bar seeking
         document.getElementById('progressBar').addEventListener('click', (e) => {
             if (!engine.audioBuffer) return;
             const rect = e.target.getBoundingClientRect();
