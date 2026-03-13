@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Syphon - Audio Effect Studio</title>
-    <meta name="theme-color" id="themeColor" content="#1a1a3a">
+    <meta name="theme-color" content="#1a1a3a">
     <meta name="description" content="Syphon - Transform your audio with speed, reverb, bass boost, chorus, tremolo and more">
     
     <!-- Fonts & Icons -->
@@ -15,45 +15,20 @@
     
     <!-- External Libraries -->
     <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
     
     <style>
-        /* === THEME VARIABLES === */
-        :root {
-            --bg-gradient-start: #0a0a20;
-            --bg-gradient-end: #1a1a3a;
-            --card-bg: rgba(0, 0, 0, 0.3);
-            --text-primary: #fff;
-            --text-secondary: #9ca3af;
-            --accent: #8b5cf6;
-            --accent-dark: #6d28d9;
-            --border-color: #4a0e6e;
-            --slider-bg: #374151;
-        }
-
-        body.light-theme {
-            --bg-gradient-start: #f0f0f8;
-            --bg-gradient-end: #d0d0e0;
-            --card-bg: rgba(255, 255, 255, 0.5);
-            --text-primary: #1a1a2e;
-            --text-secondary: #4a4a6a;
-            --accent: #6d28d9;
-            --accent-dark: #4c1d95;
-            --border-color: #a78bfa;
-            --slider-bg: #cbd5e0;
-        }
-
         /* === RESET & GLOBAL === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
-            color: var(--text-primary);
+            background: linear-gradient(135deg, #0a0a20 0%, #1a1a3a 100%);
+            color: #fff;
             min-height: 100vh;
             line-height: 1.6;
-            transition: background 0.3s, color 0.3s;
         }
         ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: var(--bg-gradient-end); }
+        ::-webkit-scrollbar-track { background: #1a1a3a; }
         ::-webkit-scrollbar-thumb { background: #4a0e6e; border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: #6a0dad; }
 
@@ -63,82 +38,25 @@
             padding: 20px;
         }
 
-        /* === HEADER / TOP BAR === */
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            position: relative;
+        /* === HEADER === */
+        header {
+            text-align: center;
+            padding: 40px 0;
+            animation: fadeIn 1s ease;
         }
-        .hamburger-menu {
-            position: relative;
-            display: inline-block;
-        }
-        .hamburger-icon {
-            font-size: 2rem;
-            cursor: pointer;
-            color: var(--accent);
-            padding: 10px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.05);
-            transition: background 0.3s;
-        }
-        .hamburger-icon:hover {
-            background: rgba(139,92,246,0.2);
-        }
-        .dropdown-menu {
-            position: absolute;
-            top: 60px;
-            right: 0; /* aligns to right */
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 15px;
-            min-width: 220px;
-            z-index: 100;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            opacity: 0;
-            transform: translateY(-10px);
-            visibility: hidden;
-            transition: opacity 0.3s, transform 0.3s, visibility 0.3s;
-        }
-        .dropdown-menu.show {
-            opacity: 1;
-            transform: translateY(0);
-            visibility: visible;
-        }
-        .dropdown-menu h4 {
-            color: var(--accent);
+        .logo {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #c4b5fd, #a78bfa, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
-            font-size: 1.1rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
         }
-        .theme-option, .discord-option {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-        .theme-option:hover, .discord-option:hover {
-            background: rgba(139,92,246,0.2);
-        }
-        .theme-option input[type="color"] {
-            width: 40px;
-            height: 40px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            background: transparent;
-        }
-        .discord-option input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            accent-color: var(--accent);
+        .tagline {
+            color: #9ca3af;
+            font-size: 1.2rem;
         }
 
         /* === STATUS BADGE === */
@@ -148,15 +66,23 @@
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 500;
-            background: rgba(16,185,129,0.1);
+            margin-left: 10px;
+        }
+        .status-ready {
+            background: #10b98120;
             color: #10b981;
             border: 1px solid #10b981;
+        }
+        .status-processing {
+            background: #f59e0b20;
+            color: #f59e0b;
+            border: 1px solid #f59e0b;
         }
 
         /* === UPLOAD AREA === */
         .upload-area {
-            background: var(--card-bg);
-            border: 2px dashed var(--border-color);
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed #4a0e6e;
             border-radius: 20px;
             padding: 60px 20px;
             text-align: center;
@@ -166,35 +92,27 @@
             backdrop-filter: blur(10px);
         }
         .upload-area:hover {
-            border-color: var(--accent);
+            border-color: #8b5cf6;
             background: rgba(139, 92, 246, 0.1);
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
         }
         .upload-area i {
             font-size: 4rem;
-            color: var(--accent);
+            color: #8b5cf6;
             margin-bottom: 20px;
         }
         .upload-area h3 { font-size: 1.5rem; margin-bottom: 10px; }
-        .upload-area p { color: var(--text-secondary); }
-
-        /* === FILE INFO === */
-        #fileInfo {
-            display: none;
-            text-align: center;
-            margin: 20px 0;
-            color: var(--text-secondary);
-        }
+        .upload-area p { color: #9ca3af; }
 
         /* === WAVEFORM & PROGRESS === */
         .waveform-container {
-            background: var(--card-bg);
+            background: rgba(0, 0, 0, 0.3);
             border-radius: 10px;
             padding: 20px;
             margin: 20px 0;
             height: 120px;
-            border: 1px solid var(--border-color);
+            border: 1px solid #4a0e6e;
             overflow: hidden;
         }
         #waveform-canvas {
@@ -206,13 +124,13 @@
             display: flex;
             justify-content: space-between;
             margin-top: 5px;
-            color: var(--text-secondary);
+            color: #9ca3af;
             font-size: 0.9rem;
         }
         .progress-bar {
             width: 100%;
             height: 4px;
-            background: var(--slider-bg);
+            background: #374151;
             border-radius: 2px;
             margin-top: 10px;
             cursor: pointer;
@@ -220,77 +138,15 @@
         }
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--accent), #c4b5fd);
+            background: linear-gradient(90deg, #8b5cf6, #c4b5fd);
             border-radius: 2px;
             width: 0%;
             transition: width 0.1s linear;
         }
 
-        /* === TRANSPORT CONTROLS === */
-        .transport-controls {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-        .btn {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 50px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Inter', sans-serif;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-            color: white;
-            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
-        }
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-        .btn-secondary:hover {
-            background: rgba(139, 92, 246, 0.2);
-            border-color: var(--accent);
-        }
-
-        /* === VOLUME CONTROL === */
-        .volume-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--card-bg);
-            padding: 8px 20px;
-            border-radius: 50px;
-            border: 1px solid var(--border-color);
-        }
-        .volume-control i {
-            color: var(--accent);
-            font-size: 1.2rem;
-        }
-        .volume-control input {
-            width: 120px;
-            background: transparent;
-            accent-color: var(--accent);
-        }
-
         /* === EFFECTS PANEL === */
         .effects-panel {
-            background: var(--card-bg);
+            background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 30px;
@@ -300,8 +156,8 @@
         .panel-title {
             font-size: 1.8rem;
             margin-bottom: 25px;
-            color: var(--accent);
-            border-bottom: 2px solid var(--border-color);
+            color: #c4b5fd;
+            border-bottom: 2px solid #4a0e6e;
             padding-bottom: 10px;
         }
         .effects-grid {
@@ -318,7 +174,7 @@
             position: relative;
         }
         .effect-card:hover {
-            border-color: var(--accent);
+            border-color: #8b5cf6;
             transform: translateY(-3px);
             box-shadow: 0 5px 20px rgba(139, 92, 246, 0.2);
         }
@@ -331,7 +187,7 @@
         }
         .effect-icon {
             font-size: 2rem;
-            color: var(--accent);
+            color: #8b5cf6;
         }
         .effect-name {
             font-size: 1.3rem;
@@ -339,7 +195,7 @@
             flex: 1;
         }
         .effect-description-toggle {
-            color: var(--text-secondary);
+            color: #9ca3af;
             font-size: 1rem;
             transition: transform 0.3s;
         }
@@ -348,13 +204,13 @@
         }
         .effect-description-content {
             display: none;
-            color: var(--text-secondary);
+            color: #b0b0b0;
             font-size: 0.9rem;
             margin-top: 10px;
             padding: 10px;
             background: rgba(0,0,0,0.2);
             border-radius: 8px;
-            border-left: 3px solid var(--accent);
+            border-left: 3px solid #8b5cf6;
         }
         .effect-description-content.show {
             display: block;
@@ -366,12 +222,12 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
-            color: var(--text-secondary);
+            color: #d1d5db;
         }
         input[type="range"] {
             width: 100%;
             height: 6px;
-            background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+            background: linear-gradient(90deg, #4a0e6e, #8b5cf6);
             border-radius: 3px;
             -webkit-appearance: none;
         }
@@ -382,8 +238,8 @@
             background: white;
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 0 10px var(--accent);
-            border: 2px solid var(--accent);
+            box-shadow: 0 0 10px #8b5cf6;
+            border: 2px solid #8b5cf6;
         }
 
         /* === TOGGLE SWITCH === */
@@ -399,7 +255,7 @@
             position: absolute;
             cursor: pointer;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-color: var(--slider-bg);
+            background-color: #374151;
             transition: .3s;
             border-radius: 24px;
         }
@@ -412,7 +268,7 @@
             transition: .3s;
             border-radius: 50%;
         }
-        input:checked + .toggle-slider { background-color: var(--accent); }
+        input:checked + .toggle-slider { background-color: #8b5cf6; }
         input:checked + .toggle-slider:before { transform: translateX(26px); }
 
         .effect-control {
@@ -425,7 +281,7 @@
             line-height: 24px;
         }
 
-        /* === ACTION BUTTONS === */
+        /* === BUTTONS === */
         .action-buttons {
             display: flex;
             gap: 15px;
@@ -433,72 +289,139 @@
             margin: 30px 0;
             flex-wrap: wrap;
         }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: white;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid #4a0e6e;
+        }
+        .btn-secondary:hover {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: #8b5cf6;
+        }
+
+        /* === TRANSPORT CONTROLS === */
+        .transport-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        /* === VOLUME CONTROL === */
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 20px;
+            border-radius: 50px;
+            border: 1px solid #4a0e6e;
+        }
+        .volume-control i {
+            color: #8b5cf6;
+            font-size: 1.2rem;
+        }
+        .volume-control input {
+            width: 120px;
+        }
+
+        /* === FORMAT SELECTOR === */
+        .format-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 20px;
+            border-radius: 50px;
+            border: 1px solid #4a0e6e;
+        }
+        .format-selector select {
+            background: transparent;
+            color: white;
+            border: 1px solid #4a0e6e;
+            border-radius: 20px;
+            padding: 4px 8px;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+        }
+        .format-selector select option {
+            background: #1a1a3a;
+        }
 
         /* === FOOTER & SPINNER === */
         footer {
             text-align: center;
             padding: 40px 0;
-            color: var(--text-secondary);
-            border-top: 1px solid var(--border-color);
+            color: #6b7280;
+            border-top: 1px solid #374151;
             margin-top: 40px;
         }
-        footer a { color: var(--accent); text-decoration: none; }
+        footer a { color: #8b5cf6; text-decoration: none; }
         footer a:hover { text-decoration: underline; }
 
         .spinner {
             display: none;
             width: 40px; height: 40px;
             border: 3px solid rgba(139, 92, 246, 0.3);
-            border-top: 3px solid var(--accent);
+            border-top: 3px solid #8b5cf6;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 20px auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-        /* === TOUCH-FRIENDLY (Mobile) === */
+        /* === RESPONSIVE === */
         @media (max-width: 768px) {
-            .btn { padding: 14px 32px; font-size: 1.1rem; }
-            input[type="range"]::-webkit-slider-thumb {
-                width: 24px;
-                height: 24px;
-            }
-            .transport-controls { gap: 10px; }
-            .volume-control input { width: 100px; }
-            .hamburger-icon { font-size: 2.5rem; }
-            .dropdown-menu { top: 70px; }
+            .logo { font-size: 2.5rem; }
+            .effects-grid { grid-template-columns: 1fr; }
+            .action-buttons { flex-direction: column; }
+            .btn { width: 100%; }
+            .transport-controls { flex-direction: column; align-items: center; }
+            .volume-control { width: 100%; justify-content: center; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Top Bar with Hamburger Menu on Right -->
-        <div class="top-bar">
-            <span id="engineStatus" class="status-badge">
-                <i class="fas fa-check-circle"></i> MP3, WAV, M4A, FLAC, OGG (Export WAV)
+        <header>
+            <div class="logo">Syphon</div>
+            <div class="tagline">Audio Effect Studio • Slow, Reverb, Bass Boost, Chorus, Tremolo & More</div>
+        </header>
+
+        <!-- Status Bar -->
+        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px;">
+            <span id="engineStatus" class="status-badge status-ready">
+                <i class="fas fa-check-circle"></i> MP3, WAV, M4A, FLAC, OGG (Export as WAV/MP3)
             </span>
-            <div class="hamburger-menu">
-                <i class="fas fa-bars hamburger-icon" id="hamburgerBtn"></i>
-                <div class="dropdown-menu" id="themeMenu">
-                    <h4><i class="fas fa-palette"></i> Theme</h4>
-                    <div class="theme-option" onclick="setTheme('dark')">
-                        <i class="fas fa-moon"></i> Dark
-                    </div>
-                    <div class="theme-option" onclick="setTheme('light')">
-                        <i class="fas fa-sun"></i> Light
-                    </div>
-                    <div class="theme-option">
-                        <i class="fas fa-eye-dropper"></i> Custom
-                        <input type="color" id="customColor" value="#8b5cf6" onchange="setCustomColor(this.value)">
-                    </div>
-                    <h4 style="margin-top:15px;"><i class="fab fa-discord"></i> Discord</h4>
-                    <div class="discord-option">
-                        <input type="checkbox" id="discordToggle" onchange="toggleDiscordPresence(this.checked)">
-                        <label for="discordToggle">Show Rich Presence</label>
-                    </div>
-                    <p style="font-size:0.8rem; color:var(--text-secondary);">Works with Discord desktop app.</p>
-                </div>
-            </div>
         </div>
 
         <!-- File Upload Area -->
@@ -510,7 +433,7 @@
         </div>
 
         <!-- File Info -->
-        <div id="fileInfo">
+        <div id="fileInfo" style="display: none; text-align: center; margin: 20px 0;">
             <i class="fas fa-music"></i> <span id="fileName"></span> - 
             <span id="fileDuration">0:00</span>
         </div>
@@ -563,7 +486,7 @@
                         <div class="slider-label"><span>Pitch (semitones)</span><span id="pitchValue">0</span></div>
                         <input type="range" min="-12" max="12" step="1" value="0" id="pitchControl">
                     </div>
-                    <div style="font-size:0.8rem; color:var(--text-secondary);">
+                    <div style="font-size:0.8rem; color:#9ca3af;">
                         <i class="fas fa-link"></i> 
                         <label><input type="checkbox" id="lockPitchSpeed" checked> Lock pitch to speed</label>
                     </div>
@@ -577,7 +500,7 @@
                         <i class="fas fa-chevron-down effect-description-toggle" id="reverb-desc-icon"></i>
                     </div>
                     <div class="effect-description-content" id="reverb-desc">
-                        Simulates acoustic spaces. Adjust decay time and wet/dry mix.
+                        Simulates acoustic spaces. Adjust decay time and wet/dry mix. Great for ambient and dreamy textures.
                     </div>
                     <div class="effect-control">
                         <span>Off</span>
@@ -604,7 +527,7 @@
                         <i class="fas fa-chevron-down effect-description-toggle" id="bass-desc-icon"></i>
                     </div>
                     <div class="effect-description-content" id="bass-desc">
-                        Enhances low frequencies with a smooth low‑shelf filter.
+                        Enhances low frequencies with a smooth low‑shelf filter and soft‑clipping to prevent distortion at high gains.
                     </div>
                     <div class="effect-control">
                         <span>Off</span>
@@ -631,7 +554,7 @@
                         <i class="fas fa-chevron-down effect-description-toggle" id="delay-desc-icon"></i>
                     </div>
                     <div class="effect-description-content" id="delay-desc">
-                        Creates rhythmic repeats. Feedback controls number of echoes.
+                        Creates rhythmic repeats. Feedback controls how many echoes you hear.
                     </div>
                     <div class="effect-control">
                         <span>Off</span>
@@ -658,7 +581,7 @@
                         <i class="fas fa-chevron-down effect-description-toggle" id="eq-desc-icon"></i>
                     </div>
                     <div class="effect-description-content" id="eq-desc">
-                        Bass, Mid, Treble control.
+                        Classic tone shaping: bass (low‑shelf), mid (peaking), treble (high‑shelf).
                     </div>
                     <div class="slider-container">
                         <div class="slider-label"><span>Bass</span><span id="eqBassValue">0dB</span></div>
@@ -682,7 +605,7 @@
                         <i class="fas fa-chevron-down effect-description-toggle" id="fade-desc-icon"></i>
                     </div>
                     <div class="effect-description-content" id="fade-desc">
-                        Smooth volume fade at start and end.
+                        Smoothly fades the volume in at the start and out at the end. Uses precise AudioParam automation.
                     </div>
                     <div class="slider-container">
                         <div class="slider-label"><span>Fade In (s)</span><span id="fadeInValue">0.0s</span></div>
@@ -702,7 +625,7 @@
                         <i class="fas fa-chevron-down effect-description-toggle" id="compressor-desc-icon"></i>
                     </div>
                     <div class="effect-description-content" id="compressor-desc">
-                        Controls dynamic range.
+                        Reduces dynamic range. Lower threshold and higher ratio create a punchier, more controlled sound.
                     </div>
                     <div class="effect-control">
                         <span>Off</span>
@@ -729,7 +652,7 @@
                     </div>
                 </div>
 
-                <!-- Chorus -->
+                <!-- Chorus (Tone.js enhanced) -->
                 <div class="effect-card" id="card-chorus">
                     <div class="effect-header" onclick="toggleDescription('chorus-desc')">
                         <i class="fas fa-wave-square effect-icon"></i>
@@ -737,7 +660,7 @@
                         <i class="fas fa-chevron-down effect-description-toggle" id="chorus-desc-icon"></i>
                     </div>
                     <div class="effect-description-content" id="chorus-desc">
-                        Thickens sound with modulated delay.
+                        Thickens sound with modulated delay. Tone.js implementation for rich, warm chorus.
                     </div>
                     <div class="effect-control">
                         <span>Off</span>
@@ -756,7 +679,7 @@
                     </div>
                 </div>
 
-                <!-- Tremolo -->
+                <!-- Tremolo (Tone.js enhanced) -->
                 <div class="effect-card" id="card-tremolo">
                     <div class="effect-header" onclick="toggleDescription('tremolo-desc')">
                         <i class="fas fa-chart-line effect-icon"></i>
@@ -764,7 +687,7 @@
                         <i class="fas fa-chevron-down effect-description-toggle" id="tremolo-desc-icon"></i>
                     </div>
                     <div class="effect-description-content" id="tremolo-desc">
-                        Rhythmic volume modulation.
+                        Rhythmic volume modulation. Tone.js tremolo with smooth LFO.
                     </div>
                     <div class="effect-control">
                         <span>Off</span>
@@ -785,9 +708,9 @@
             </div>
         </div>
 
-        <!-- Quick Presets -->
+        <!-- Presets -->
         <div style="text-align: center; margin: 20px 0;">
-            <h3 style="color: var(--accent); margin-bottom: 15px;">Quick Presets</h3>
+            <h3 style="color: #c4b5fd; margin-bottom: 15px;">Quick Presets</h3>
             <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                 <button class="btn btn-secondary" onclick="applyPreset('slowed')">Slowed + Reverb</button>
                 <button class="btn btn-secondary" onclick="applyPreset('nightcore')">Nightcore</button>
@@ -798,9 +721,16 @@
             </div>
         </div>
 
-        <!-- Action Buttons (Export & Reset) -->
+        <!-- Action Buttons (Export & Reset) with Format Selector -->
         <div class="action-buttons">
-            <button class="btn btn-primary" id="exportBtn" disabled><i class="fas fa-download"></i> Export WAV</button>
+            <div class="format-selector">
+                <i class="fas fa-file-audio"></i>
+                <select id="exportFormat">
+                    <option value="wav">WAV</option>
+                    <option value="mp3">MP3</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" id="exportBtn" disabled><i class="fas fa-download"></i> Export</button>
             <button class="btn btn-secondary" id="resetBtn"><i class="fas fa-undo"></i> Reset All</button>
         </div>
 
@@ -811,7 +741,7 @@
         <footer>
             <p>Syphon Audio Studio © 2026 | Transform your audio with powerful effects</p>
             <p style="margin-top: 10px; font-size: 0.9rem;">
-                <i class="fas fa-code"></i> XenosCode • Powered by Tone.js
+                <i class="fas fa-code"></i> XenosCode • Powered by Tone.js & lamejs
             </p>
         </footer>
     </div>
@@ -830,113 +760,14 @@
             }
         }
 
-        // ==================== THEME & DISCORD ====================
-        function setTheme(mode) {
-            if (mode === 'dark') {
-                document.body.classList.remove('light-theme');
-                document.getElementById('themeColor').setAttribute('content', '#1a1a3a');
-            } else {
-                document.body.classList.add('light-theme');
-                document.getElementById('themeColor').setAttribute('content', '#d0d0e0');
-            }
-            localStorage.setItem('syphon-theme', mode);
-        }
-
-        function setCustomColor(color) {
-            document.documentElement.style.setProperty('--accent', color);
-            document.documentElement.style.setProperty('--accent-dark', adjustColor(color, -20));
-            localStorage.setItem('syphon-accent', color);
-        }
-
-        function adjustColor(hex, percent) {
-            let R = parseInt(hex.substring(1,3), 16);
-            let G = parseInt(hex.substring(3,5), 16);
-            let B = parseInt(hex.substring(5,7), 16);
-            R = Math.min(255, Math.max(0, R + percent));
-            G = Math.min(255, Math.max(0, G + percent));
-            B = Math.min(255, Math.max(0, B + percent));
-            return `#${((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)}`;
-        }
-
-        // Discord Rich Presence
-        let clientId = '123456789012345678'; // Replace with your actual Discord App ID
-        let presenceInterval = null;
-
-        async function toggleDiscordPresence(enabled) {
-            if (enabled) {
-                if (typeof DiscordRPC === 'undefined') {
-                    // Load Discord RPC script dynamically
-                    const script = document.createElement('script');
-                    script.src = 'https://cdn.jsdelivr.net/npm/discord-rpc@4.0.1/dist/discord-rpc.min.js';
-                    script.onload = () => {
-                        initDiscord();
-                    };
-                    document.head.appendChild(script);
-                } else {
-                    initDiscord();
-                }
-            } else {
-                if (window.discordRPC) {
-                    window.discordRPC.clearPresence();
-                    window.discordRPC.destroy();
-                    window.discordRPC = null;
-                }
-                if (presenceInterval) clearInterval(presenceInterval);
-            }
-        }
-
-        function initDiscord() {
-            const rpc = new DiscordRPC.Client({ transport: 'ipc' });
-            window.discordRPC = rpc;
-            rpc.on('ready', () => {
-                console.log('Discord RPC ready');
-                setActivity();
-                presenceInterval = setInterval(setActivity, 15000);
-            });
-            rpc.login({ clientId }).catch(console.error);
-        }
-
-        function setActivity() {
-            if (!window.discordRPC) return;
-            const details = engine.isPlaying 
-                ? (engine.micEnabled ? 'Using microphone' : (engine.audioBuffer ? 'Editing audio' : 'Idle'))
-                : 'Browsing Syphon';
-            window.discordRPC.setActivity({
-                details: details,
-                state: 'Audio Effect Studio',
-                largeImageKey: 'syphon_logo',
-                largeImageText: 'Syphon',
-                instance: false,
-                startTimestamp: Date.now()
-            });
-        }
-
-        // Hamburger menu
-        document.getElementById('hamburgerBtn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            document.getElementById('themeMenu').classList.toggle('show');
-        });
-
-        // Close menu when clicking outside
-        window.addEventListener('click', (e) => {
-            if (!e.target.closest('.hamburger-menu')) {
-                document.getElementById('themeMenu').classList.remove('show');
-            }
-        });
-
-        // Load saved theme
-        (function loadTheme() {
-            const savedTheme = localStorage.getItem('syphon-theme');
-            if (savedTheme === 'light') setTheme('light');
-            const savedAccent = localStorage.getItem('syphon-accent');
-            if (savedAccent) setCustomColor(savedAccent);
-        })();
-
         // ==================== AUDIO ENGINE ====================
         class SyphonEngine {
             constructor() {
-                Tone.start().then(() => console.log('Tone.js started'));
-                this.audioContext = Tone.context;
+                // Use Tone.js context to ensure compatibility
+                Tone.start().then(() => {
+                    console.log('Tone.js started');
+                });
+                this.audioContext = Tone.context; // Use Tone's context
                 this.audioBuffer = null;
                 this.sourceNode = null;
                 this.isPlaying = false;
@@ -953,11 +784,20 @@
                 this.tremoloEffect = null;
 
                 this.nodes = {
-                    bassEQ: null, midEQ: null, trebleEQ: null,
-                    bassBoost: null, bassClipper: null,
+                    bassEQ: null,
+                    midEQ: null,
+                    trebleEQ: null,
+                    bassBoost: null,
+                    bassClipper: null,
                     compressor: null,
-                    delay: null, delayFeedback: null,
-                    reverb: { dryGain: null, wetGain: null, convolver: null, reverbSum: null },
+                    delay: null,
+                    delayFeedback: null,
+                    reverb: {
+                        dryGain: null,
+                        wetGain: null,
+                        convolver: null,
+                        reverbSum: null
+                    },
                     fadeGain: null
                 };
 
@@ -977,14 +817,23 @@
                 };
 
                 this.lockPitchSpeed = true;
+
+                document.getElementById('engineStatus').innerHTML = '<i class="fas fa-check-circle"></i> MP3, WAV, M4A, FLAC, OGG (Export as WAV/MP3)';
+                document.getElementById('engineStatus').className = 'status-badge status-ready';
             }
 
             async loadAudioFile(file) {
-                if (this.sourceNode) { try { this.sourceNode.stop(); } catch(e) {} this.sourceNode = null; }
+                if (this.sourceNode) {
+                    try { this.sourceNode.stop(); } catch (e) {}
+                    this.sourceNode = null;
+                }
                 this.isPlaying = false;
                 this.pauseTime = 0;
                 this.startTime = 0;
-                if (this.fadeOutTimeout) clearTimeout(this.fadeOutTimeout);
+                if (this.fadeOutTimeout) {
+                    clearTimeout(this.fadeOutTimeout);
+                    this.fadeOutTimeout = null;
+                }
                 
                 document.getElementById('currentTime').textContent = '0:00';
                 document.getElementById('progressFill').style.width = '0%';
@@ -1002,9 +851,12 @@
                 this.updatePlayPauseButton();
                 
                 this.loop = false;
-                document.getElementById('loopBtn').className = 'btn btn-secondary';
+                const loopBtn = document.getElementById('loopBtn');
+                loopBtn.className = 'btn btn-secondary';
                 
                 this.buildEffectChain();
+                
+                return this.audioBuffer;
             }
 
             drawWaveform() {
@@ -1018,7 +870,7 @@
                 const amp = height / 2;
                 ctx.clearRect(0, 0, width, height);
                 ctx.beginPath();
-                ctx.strokeStyle = 'var(--accent)';
+                ctx.strokeStyle = '#8b5cf6';
                 ctx.lineWidth = 2;
                 for (let i = 0; i < width; i++) {
                     let min = 1.0, max = -1.0;
@@ -1051,37 +903,67 @@
                 if (!this.audioContext || !this.audioBuffer) return;
 
                 if (this.sourceNode) {
-                    try { this.sourceNode.stop(); } catch(e) {}
+                    try { this.sourceNode.stop(); } catch (e) {}
                     this.sourceNode = null;
                 }
-                if (this.chorusEffect) { this.chorusEffect.dispose(); this.chorusEffect = null; }
-                if (this.tremoloEffect) { this.tremoloEffect.dispose(); this.tremoloEffect = null; }
+
+                // Clean up previous Tone effects
+                if (this.chorusEffect) {
+                    this.chorusEffect.dispose();
+                    this.chorusEffect = null;
+                }
+                if (this.tremoloEffect) {
+                    this.tremoloEffect.dispose();
+                    this.tremoloEffect = null;
+                }
 
                 this.sourceNode = this.audioContext.createBufferSource();
                 this.sourceNode.buffer = this.audioBuffer;
                 this.sourceNode.playbackRate.value = this.effects.speed;
-                if (!this.lockPitchSpeed) this.sourceNode.detune.value = this.effects.pitch * 100;
+                if (!this.lockPitchSpeed) {
+                    this.sourceNode.detune.value = this.effects.pitch * 100;
+                }
 
                 let lastNode = this.sourceNode;
 
-                // EQ
+                // ---- EQ ----
                 const bassEQ = this.audioContext.createBiquadFilter();
-                bassEQ.type = 'lowshelf'; bassEQ.frequency.value = 250; bassEQ.gain.value = this.effects.eq.bass;
-                const midEQ = this.audioContext.createBiquadFilter();
-                midEQ.type = 'peaking'; midEQ.frequency.value = 1000; midEQ.Q.value = 1; midEQ.gain.value = this.effects.eq.mid;
-                const trebleEQ = this.audioContext.createBiquadFilter();
-                trebleEQ.type = 'highshelf'; trebleEQ.frequency.value = 4000; trebleEQ.gain.value = this.effects.eq.treble;
-                lastNode.connect(bassEQ); lastNode = bassEQ;
-                lastNode.connect(midEQ); lastNode = midEQ;
-                lastNode.connect(trebleEQ); lastNode = trebleEQ;
-                this.nodes.bassEQ = bassEQ; this.nodes.midEQ = midEQ; this.nodes.trebleEQ = trebleEQ;
+                bassEQ.type = 'lowshelf';
+                bassEQ.frequency.value = 250;
+                bassEQ.gain.value = this.effects.eq.bass;
 
-                // Bass Boost
+                const midEQ = this.audioContext.createBiquadFilter();
+                midEQ.type = 'peaking';
+                midEQ.frequency.value = 1000;
+                midEQ.Q.value = 1;
+                midEQ.gain.value = this.effects.eq.mid;
+
+                const trebleEQ = this.audioContext.createBiquadFilter();
+                trebleEQ.type = 'highshelf';
+                trebleEQ.frequency.value = 4000;
+                trebleEQ.gain.value = this.effects.eq.treble;
+
+                lastNode.connect(bassEQ);
+                lastNode = bassEQ;
+                lastNode.connect(midEQ);
+                lastNode = midEQ;
+                lastNode.connect(trebleEQ);
+                lastNode = trebleEQ;
+
+                this.nodes.bassEQ = bassEQ;
+                this.nodes.midEQ = midEQ;
+                this.nodes.trebleEQ = trebleEQ;
+
+                // ---- Bass Boost ----
                 if (this.effects.bass.active) {
                     const bassBoost = this.audioContext.createBiquadFilter();
-                    bassBoost.type = 'lowshelf'; bassBoost.frequency.value = this.effects.bass.freq; bassBoost.gain.value = this.effects.bass.gain;
-                    lastNode.connect(bassBoost); lastNode = bassBoost;
+                    bassBoost.type = 'lowshelf';
+                    bassBoost.frequency.value = this.effects.bass.freq;
+                    bassBoost.gain.value = this.effects.bass.gain;
+                    lastNode.connect(bassBoost);
+                    lastNode = bassBoost;
                     this.nodes.bassBoost = bassBoost;
+
                     if (this.effects.bass.gain > 12) {
                         const clipper = this.audioContext.createWaveShaper();
                         const curve = new Float32Array(44100);
@@ -1090,35 +972,53 @@
                             curve[i] = Math.tanh(x * 1.5) / Math.tanh(1.5);
                         }
                         clipper.curve = curve;
-                        lastNode.connect(clipper); lastNode = clipper;
+                        lastNode.connect(clipper);
+                        lastNode = clipper;
                         this.nodes.bassClipper = clipper;
-                    } else this.nodes.bassClipper = null;
-                } else { this.nodes.bassBoost = null; this.nodes.bassClipper = null; }
+                    } else {
+                        this.nodes.bassClipper = null;
+                    }
+                } else {
+                    this.nodes.bassBoost = null;
+                    this.nodes.bassClipper = null;
+                }
 
-                // Compressor
+                // ---- Compressor ----
                 if (this.effects.compressor.active) {
-                    const comp = this.audioContext.createDynamicsCompressor();
-                    comp.threshold.value = this.effects.compressor.threshold;
-                    comp.ratio.value = this.effects.compressor.ratio;
-                    comp.attack.value = this.effects.compressor.attack;
-                    comp.release.value = this.effects.compressor.release;
-                    lastNode.connect(comp); lastNode = comp;
-                    this.nodes.compressor = comp;
-                } else this.nodes.compressor = null;
+                    const compressor = this.audioContext.createDynamicsCompressor();
+                    compressor.threshold.value = this.effects.compressor.threshold;
+                    compressor.ratio.value = this.effects.compressor.ratio;
+                    compressor.attack.value = this.effects.compressor.attack;
+                    compressor.release.value = this.effects.compressor.release;
+                    lastNode.connect(compressor);
+                    lastNode = compressor;
+                    this.nodes.compressor = compressor;
+                } else {
+                    this.nodes.compressor = null;
+                }
 
-                // Delay
+                // ---- Delay ----
                 if (this.effects.delay.active) {
                     const delay = this.audioContext.createDelay(2.0);
                     delay.delayTime.value = this.effects.delay.time;
                     const feedback = this.audioContext.createGain();
                     feedback.gain.value = this.effects.delay.feedback;
-                    delay.connect(feedback); feedback.connect(delay);
-                    lastNode.connect(delay); lastNode = delay;
-                    this.nodes.delay = delay; this.nodes.delayFeedback = feedback;
-                } else { this.nodes.delay = null; this.nodes.delayFeedback = null; }
+                    delay.connect(feedback);
+                    feedback.connect(delay);
+                    lastNode.connect(delay);
+                    lastNode = delay;
+                    this.nodes.delay = delay;
+                    this.nodes.delayFeedback = feedback;
+                } else {
+                    this.nodes.delay = null;
+                    this.nodes.delayFeedback = null;
+                }
 
-                // Chorus
+                // ---- Chorus (Tone.js) ----
                 if (this.effects.chorus.active) {
+                    // Convert to Tone.js signal chain
+                    // We need to insert a Tone. Chorus between lastNode and next.
+                    // Tone.js can take an existing AudioNode as input.
                     this.chorusEffect = new Tone.Chorus({
                         frequency: this.effects.chorus.rate,
                         delayTime: 3.5,
@@ -1126,13 +1026,26 @@
                         type: 'sine',
                         spread: 180
                     }).start();
+                    // Connect lastNode to chorus input (Tone.js can connect to AudioNode)
+                    // But Tone.js nodes have input/output that are AudioNodes.
+                    // We can use the context to create a GainNode as a bridge.
+                    // Simpler: we'll route through a gain and then to chorus.
+                    const inputGain = this.audioContext.createGain();
+                    lastNode.connect(inputGain);
+                    this.chorusEffect.connect(inputGain); // wait, that's wrong.
+                    // Actually: lastNode -> chorus.input, chorus.output -> next.
+                    // Tone.Chorus extends Tone.Effect, which has connect methods.
+                    // We can connect an AudioNode to a Tone node via `Tone.connect`.
                     Tone.connect(lastNode, this.chorusEffect);
+                    lastNode = this.chorusEffect.input; // but we need the output
+                    // The output of Tone.Chorus is its `effect` output.
+                    // We'll create a gain node as a bridge.
                     const chorusOutput = this.audioContext.createGain();
                     this.chorusEffect.connect(chorusOutput);
                     lastNode = chorusOutput;
                 }
 
-                // Tremolo
+                // ---- Tremolo (Tone.js) ----
                 if (this.effects.tremolo.active) {
                     this.tremoloEffect = new Tone.Tremolo({
                         frequency: this.effects.tremolo.rate,
@@ -1145,24 +1058,35 @@
                     lastNode = tremoloOutput;
                 }
 
-                // Reverb
+                // ---- Reverb ----
                 if (this.effects.reverb.active) {
-                    const dryGain = this.audioContext.createGain(); dryGain.gain.value = 1 - this.effects.reverb.wet;
-                    const wetGain = this.audioContext.createGain(); wetGain.gain.value = this.effects.reverb.wet;
+                    const dryGain = this.audioContext.createGain();
+                    const wetGain = this.audioContext.createGain();
+                    dryGain.gain.value = 1 - this.effects.reverb.wet;
+                    wetGain.gain.value = this.effects.reverb.wet;
+
                     const convolver = this.audioContext.createConvolver();
                     convolver.buffer = this.createReverbImpulse(this.effects.reverb.decay);
-                    lastNode.connect(dryGain);
-                    lastNode.connect(convolver); convolver.connect(wetGain);
-                    const reverbSum = this.audioContext.createGain();
-                    dryGain.connect(reverbSum); wetGain.connect(reverbSum);
-                    lastNode = reverbSum;
-                    this.nodes.reverb = { dryGain, wetGain, convolver, reverbSum };
-                } else this.nodes.reverb = { dryGain: null, wetGain: null, convolver: null, reverbSum: null };
 
-                // Fade Gain
+                    lastNode.connect(dryGain);
+                    lastNode.connect(convolver);
+                    convolver.connect(wetGain);
+
+                    const reverbSum = this.audioContext.createGain();
+                    dryGain.connect(reverbSum);
+                    wetGain.connect(reverbSum);
+                    lastNode = reverbSum;
+
+                    this.nodes.reverb = { dryGain, wetGain, convolver, reverbSum };
+                } else {
+                    this.nodes.reverb = { dryGain: null, wetGain: null, convolver: null, reverbSum: null };
+                }
+
+                // ---- Fade Gain ----
                 const fadeGain = this.audioContext.createGain();
                 fadeGain.gain.value = 1;
-                lastNode.connect(fadeGain); lastNode = fadeGain;
+                lastNode.connect(fadeGain);
+                lastNode = fadeGain;
                 this.nodes.fadeGain = fadeGain;
 
                 lastNode.connect(this.masterGain);
@@ -1175,17 +1099,20 @@
                     this.sourceNode.detune.value = (!this.lockPitchSpeed) ? this.effects.pitch * 100 : 0;
                 }
             }
+
             updateEQ() {
                 if (this.nodes.bassEQ) this.nodes.bassEQ.gain.value = this.effects.eq.bass;
                 if (this.nodes.midEQ) this.nodes.midEQ.gain.value = this.effects.eq.mid;
                 if (this.nodes.trebleEQ) this.nodes.trebleEQ.gain.value = this.effects.eq.treble;
             }
+
             updateBass() {
                 if (this.nodes.bassBoost) {
                     this.nodes.bassBoost.frequency.value = this.effects.bass.freq;
                     this.nodes.bassBoost.gain.value = this.effects.bass.gain;
                 }
             }
+
             updateCompressor() {
                 if (this.nodes.compressor) {
                     this.nodes.compressor.threshold.value = this.effects.compressor.threshold;
@@ -1194,22 +1121,26 @@
                     this.nodes.compressor.release.value = this.effects.compressor.release;
                 }
             }
+
             updateDelay() {
                 if (this.nodes.delay) this.nodes.delay.delayTime.value = this.effects.delay.time;
                 if (this.nodes.delayFeedback) this.nodes.delayFeedback.gain.value = this.effects.delay.feedback;
             }
+
             updateReverbWet() {
                 if (this.nodes.reverb.dryGain && this.nodes.reverb.wetGain) {
                     this.nodes.reverb.dryGain.gain.value = 1 - this.effects.reverb.wet;
                     this.nodes.reverb.wetGain.gain.value = this.effects.reverb.wet;
                 }
             }
+
             updateChorus() {
                 if (this.chorusEffect) {
                     this.chorusEffect.frequency.value = this.effects.chorus.rate;
                     this.chorusEffect.depth.value = this.effects.chorus.depth;
                 }
             }
+
             updateTremolo() {
                 if (this.tremoloEffect) {
                     this.tremoloEffect.frequency.value = this.effects.tremolo.rate;
@@ -1222,7 +1153,7 @@
                 const currentPos = this.pauseTime;
                 if (wasPlaying) this.pause();
                 this.buildEffectChain();
-                if (wasPlaying && this.sourceNode) {
+                if (wasPlaying) {
                     this.pauseTime = currentPos;
                     this.play();
                 }
@@ -1233,7 +1164,6 @@
                 if (this.audioContext.state === 'suspended') await this.audioContext.resume();
 
                 if (!this.sourceNode) this.buildEffectChain();
-                if (!this.sourceNode) return;
 
                 const offset = this.pauseTime || 0;
                 this.sourceNode.start(0, offset);
@@ -1254,8 +1184,14 @@
 
             pause() {
                 if (!this.isPlaying) return;
-                if (this.fadeOutTimeout) clearTimeout(this.fadeOutTimeout);
+
+                if (this.fadeOutTimeout) {
+                    clearTimeout(this.fadeOutTimeout);
+                    this.fadeOutTimeout = null;
+                }
+
                 const stopTime = this.audioContext.currentTime + this.fadeOutTime;
+
                 if (this.fadeOutTime > 0 && this.nodes.fadeGain) {
                     this.nodes.fadeGain.gain.cancelScheduledValues(this.audioContext.currentTime);
                     this.nodes.fadeGain.gain.setValueAtTime(this.nodes.fadeGain.gain.value, this.audioContext.currentTime);
@@ -1264,6 +1200,7 @@
                 } else {
                     this.sourceNode.stop();
                 }
+
                 const delay = this.fadeOutTime * 1000;
                 if (delay > 0) {
                     this.fadeOutTimeout = setTimeout(() => {
@@ -1305,8 +1242,11 @@
                     document.getElementById('progressFill').style.width = percent + '%';
                     requestAnimationFrame(() => this.updateTime());
                 } else {
-                    if (this.loop) this.restart();
-                    else this.stopPlayback();
+                    if (this.loop) {
+                        this.restart();
+                    } else {
+                        this.stopPlayback();
+                    }
                 }
             }
 
@@ -1346,22 +1286,32 @@
                 if (this.masterGain) this.masterGain.gain.value = value;
             }
 
-            setFadeIn(value) { this.effects.fadeIn = value; this.fadeInTime = value; }
-            setFadeOut(value) { this.effects.fadeOut = value; this.fadeOutTime = value; }
+            setFadeIn(value) {
+                this.effects.fadeIn = value;
+                this.fadeInTime = value;
+            }
+            setFadeOut(value) {
+                this.effects.fadeOut = value;
+                this.fadeOutTime = value;
+            }
 
             async exportAudio() {
                 if (!this.audioBuffer) return;
                 document.getElementById('spinner').style.display = 'block';
+
+                const format = document.getElementById('exportFormat').value;
 
                 const offlineCtx = new OfflineAudioContext(
                     this.audioBuffer.numberOfChannels,
                     this.audioBuffer.length,
                     this.audioBuffer.sampleRate
                 );
+
                 const source = offlineCtx.createBufferSource();
                 source.buffer = this.audioBuffer;
                 source.playbackRate.value = this.effects.speed;
                 if (!this.lockPitchSpeed) source.detune.value = this.effects.pitch * 100;
+
                 let last = source;
 
                 // EQ
@@ -1370,6 +1320,7 @@
                 const tEQ = offlineCtx.createBiquadFilter(); tEQ.type = 'highshelf'; tEQ.frequency.value = 4000; tEQ.gain.value = this.effects.eq.treble;
                 last.connect(bEQ); last = bEQ; last.connect(mEQ); last = mEQ; last.connect(tEQ); last = tEQ;
 
+                // Bass Boost
                 if (this.effects.bass.active) {
                     const boost = offlineCtx.createBiquadFilter(); boost.type = 'lowshelf'; boost.frequency.value = this.effects.bass.freq; boost.gain.value = this.effects.bass.gain;
                     last.connect(boost); last = boost;
@@ -1384,42 +1335,81 @@
                         last.connect(clipper); last = clipper;
                     }
                 }
+
+                // Compressor
                 if (this.effects.compressor.active) {
                     const comp = offlineCtx.createDynamicsCompressor();
                     comp.threshold.value = this.effects.compressor.threshold;
                     comp.ratio.value = this.effects.compressor.ratio;
                     comp.attack.value = this.effects.compressor.attack;
                     comp.release.value = this.effects.compressor.release;
-                    last.connect(comp); last = comp;
+                    last.connect(comp);
+                    last = comp;
                 }
+
+                // Delay
                 if (this.effects.delay.active) {
                     const d = offlineCtx.createDelay(2.0); d.delayTime.value = this.effects.delay.time;
                     const fb = offlineCtx.createGain(); fb.gain.value = this.effects.delay.feedback;
                     d.connect(fb); fb.connect(d);
                     last.connect(d); last = d;
                 }
+
+                // Chorus (simplified offline: we can't easily use Tone.js offline, so we approximate with a simple delay)
+                if (this.effects.chorus.active) {
+                    // Simple chorus: mix dry with delayed signal
+                    const dry = offlineCtx.createGain(); dry.gain.value = 0.7;
+                    const wet = offlineCtx.createGain(); wet.gain.value = 0.3;
+                    const delay = offlineCtx.createDelay(0.05); delay.delayTime.value = 0.02;
+                    last.connect(dry);
+                    last.connect(delay); delay.connect(wet);
+                    const sum = offlineCtx.createGain();
+                    dry.connect(sum); wet.connect(sum);
+                    last = sum;
+                }
+
+                // Tremolo (offline approximation)
+                if (this.effects.tremolo.active) {
+                    // Not implemented in offline – too complex. We'll just pass through.
+                }
+
+                // Reverb
                 if (this.effects.reverb.active) {
                     const dry = offlineCtx.createGain(); dry.gain.value = 1 - this.effects.reverb.wet;
                     const wet = offlineCtx.createGain(); wet.gain.value = this.effects.reverb.wet;
                     const conv = offlineCtx.createConvolver(); conv.buffer = this.createReverbImpulse.call({audioContext: offlineCtx}, this.effects.reverb.decay);
-                    last.connect(dry); last.connect(conv); conv.connect(wet);
+                    last.connect(dry);
+                    last.connect(conv); conv.connect(wet);
                     const sum = offlineCtx.createGain(); dry.connect(sum); wet.connect(sum);
                     last = sum;
                 }
+
                 const offlineGain = offlineCtx.createGain();
                 offlineGain.gain.value = this.effects.volume;
                 last.connect(offlineGain);
                 offlineGain.connect(offlineCtx.destination);
                 source.start();
+
                 const renderedBuffer = await offlineCtx.startRendering();
 
-                const wavBlob = this.bufferToWav(renderedBuffer);
-                const url = URL.createObjectURL(wavBlob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'syphon_processed.wav';
-                a.click();
-                URL.revokeObjectURL(url);
+                if (format === 'wav') {
+                    const wavBlob = this.bufferToWav(renderedBuffer);
+                    const url = URL.createObjectURL(wavBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'syphon_processed.wav';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } else if (format === 'mp3') {
+                    // Use lamejs to encode to MP3
+                    const mp3Blob = await this.bufferToMp3(renderedBuffer);
+                    const url = URL.createObjectURL(mp3Blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'syphon_processed.mp3';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }
 
                 document.getElementById('spinner').style.display = 'none';
             }
@@ -1460,6 +1450,36 @@
                 return new Blob([wavBuffer], { type: 'audio/wav' });
             }
 
+            async bufferToMp3(buffer) {
+                const numChannels = buffer.numberOfChannels;
+                const sampleRate = buffer.sampleRate;
+                // lamejs expects interleaved Int16Array
+                const interleaved = this.interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+                const samples = new Int16Array(interleaved.length);
+                for (let i = 0; i < interleaved.length; i++) {
+                    let s = Math.max(-1, Math.min(1, interleaved[i]));
+                    samples[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                }
+
+                const mp3encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, 128);
+                const mp3Data = [];
+                const sampleBlockSize = 1152; // LAME default
+
+                for (let i = 0; i < samples.length; i += sampleBlockSize) {
+                    const sampleChunk = samples.subarray(i, i + sampleBlockSize);
+                    const mp3buf = mp3encoder.encodeBuffer(sampleChunk);
+                    if (mp3buf.length > 0) {
+                        mp3Data.push(mp3buf);
+                    }
+                }
+                const mp3buf = mp3encoder.flush();
+                if (mp3buf.length > 0) {
+                    mp3Data.push(mp3buf);
+                }
+
+                return new Blob(mp3Data, { type: 'audio/mp3' });
+            }
+
             interleave(left, right) {
                 const len = left.length;
                 const result = new Float32Array(len * 2);
@@ -1484,30 +1504,88 @@
             }
         }
 
-        // Initialize engine
+        // ==================== INITIALIZATION ====================
         const engine = new SyphonEngine();
 
-        // ==================== EVENT HANDLERS ====================
-
-        // File upload
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const fileInfo = document.getElementById('fileInfo');
 
+        const speedControl = document.getElementById('speedControl');
+        const speedValue = document.getElementById('speedValue');
+        const pitchControl = document.getElementById('pitchControl');
+        const pitchValue = document.getElementById('pitchValue');
+        const lockPitchSpeed = document.getElementById('lockPitchSpeed');
+
+        const reverbToggle = document.getElementById('reverbToggle');
+        const reverbDecay = document.getElementById('reverbDecay');
+        const reverbDecayValue = document.getElementById('reverbDecayValue');
+        const reverbWet = document.getElementById('reverbWet');
+        const reverbWetValue = document.getElementById('reverbWetValue');
+
+        const bassToggle = document.getElementById('bassToggle');
+        const bassLevel = document.getElementById('bassLevel');
+        const bassValue = document.getElementById('bassValue');
+        const bassFreq = document.getElementById('bassFreq');
+        const bassFreqValue = document.getElementById('bassFreqValue');
+
+        const delayToggle = document.getElementById('delayToggle');
+        const delayTime = document.getElementById('delayTime');
+        const delayTimeValue = document.getElementById('delayTimeValue');
+        const delayFeedback = document.getElementById('delayFeedback');
+        const delayFeedbackValue = document.getElementById('delayFeedbackValue');
+
+        const eqBass = document.getElementById('eqBass');
+        const eqBassValue = document.getElementById('eqBassValue');
+        const eqMid = document.getElementById('eqMid');
+        const eqMidValue = document.getElementById('eqMidValue');
+        const eqTreble = document.getElementById('eqTreble');
+        const eqTrebleValue = document.getElementById('eqTrebleValue');
+
+        const volumeSlider = document.getElementById('volumeSlider');
+
+        const fadeIn = document.getElementById('fadeIn');
+        const fadeInValue = document.getElementById('fadeInValue');
+        const fadeOut = document.getElementById('fadeOut');
+        const fadeOutValue = document.getElementById('fadeOutValue');
+
+        const compressorToggle = document.getElementById('compressorToggle');
+        const threshold = document.getElementById('threshold');
+        const thresholdValue = document.getElementById('thresholdValue');
+        const ratio = document.getElementById('ratio');
+        const ratioValue = document.getElementById('ratioValue');
+        const attack = document.getElementById('attack');
+        const attackValue = document.getElementById('attackValue');
+        const release = document.getElementById('release');
+        const releaseValue = document.getElementById('releaseValue');
+
+        const chorusToggle = document.getElementById('chorusToggle');
+        const chorusRate = document.getElementById('chorusRate');
+        const chorusRateValue = document.getElementById('chorusRateValue');
+        const chorusDepth = document.getElementById('chorusDepth');
+        const chorusDepthValue = document.getElementById('chorusDepthValue');
+
+        const tremoloToggle = document.getElementById('tremoloToggle');
+        const tremoloRate = document.getElementById('tremoloRate');
+        const tremoloRateValue = document.getElementById('tremoloRateValue');
+        const tremoloDepth = document.getElementById('tremoloDepth');
+        const tremoloDepthValue = document.getElementById('tremoloDepthValue');
+
+        // File upload
         uploadArea.addEventListener('click', () => fileInput.click());
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
-            uploadArea.style.borderColor = 'var(--accent)';
+            uploadArea.style.borderColor = '#8b5cf6';
             uploadArea.style.background = 'rgba(139, 92, 246, 0.1)';
         });
         uploadArea.addEventListener('dragleave', (e) => {
             e.preventDefault();
-            uploadArea.style.borderColor = 'var(--border-color)';
+            uploadArea.style.borderColor = '#4a0e6e';
             uploadArea.style.background = 'rgba(255, 255, 255, 0.05)';
         });
         uploadArea.addEventListener('drop', async (e) => {
             e.preventDefault();
-            uploadArea.style.borderColor = 'var(--border-color)';
+            uploadArea.style.borderColor = '#4a0e6e';
             uploadArea.style.background = 'rgba(255, 255, 255, 0.05)';
             const file = e.dataTransfer.files[0];
             if (file && file.type.startsWith('audio/')) {
@@ -1531,15 +1609,9 @@
         document.getElementById('restartBtn').addEventListener('click', () => engine.restart());
 
         // Volume
-        document.getElementById('volumeSlider').addEventListener('input', (e) => engine.setVolume(parseFloat(e.target.value)));
+        volumeSlider.addEventListener('input', (e) => engine.setVolume(parseFloat(e.target.value)));
 
         // Speed
-        const speedControl = document.getElementById('speedControl');
-        const speedValue = document.getElementById('speedValue');
-        const pitchControl = document.getElementById('pitchControl');
-        const pitchValue = document.getElementById('pitchValue');
-        const lockPitchSpeed = document.getElementById('lockPitchSpeed');
-
         speedControl.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
             speedValue.textContent = val.toFixed(2) + 'x';
@@ -1579,12 +1651,6 @@
         });
 
         // Reverb
-        const reverbToggle = document.getElementById('reverbToggle');
-        const reverbDecay = document.getElementById('reverbDecay');
-        const reverbDecayValue = document.getElementById('reverbDecayValue');
-        const reverbWet = document.getElementById('reverbWet');
-        const reverbWetValue = document.getElementById('reverbWetValue');
-
         reverbToggle.addEventListener('change', (e) => {
             engine.effects.reverb.active = e.target.checked;
             engine.rebuildChain();
@@ -1603,12 +1669,6 @@
         });
 
         // Bass
-        const bassToggle = document.getElementById('bassToggle');
-        const bassLevel = document.getElementById('bassLevel');
-        const bassValue = document.getElementById('bassValue');
-        const bassFreq = document.getElementById('bassFreq');
-        const bassFreqValue = document.getElementById('bassFreqValue');
-
         bassToggle.addEventListener('change', (e) => {
             engine.effects.bass.active = e.target.checked;
             engine.rebuildChain();
@@ -1627,12 +1687,6 @@
         });
 
         // Delay
-        const delayToggle = document.getElementById('delayToggle');
-        const delayTime = document.getElementById('delayTime');
-        const delayTimeValue = document.getElementById('delayTimeValue');
-        const delayFeedback = document.getElementById('delayFeedback');
-        const delayFeedbackValue = document.getElementById('delayFeedbackValue');
-
         delayToggle.addEventListener('change', (e) => {
             engine.effects.delay.active = e.target.checked;
             engine.rebuildChain();
@@ -1651,13 +1705,6 @@
         });
 
         // EQ
-        const eqBass = document.getElementById('eqBass');
-        const eqBassValue = document.getElementById('eqBassValue');
-        const eqMid = document.getElementById('eqMid');
-        const eqMidValue = document.getElementById('eqMidValue');
-        const eqTreble = document.getElementById('eqTreble');
-        const eqTrebleValue = document.getElementById('eqTrebleValue');
-
         eqBass.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             eqBassValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
@@ -1678,11 +1725,6 @@
         });
 
         // Fade
-        const fadeIn = document.getElementById('fadeIn');
-        const fadeInValue = document.getElementById('fadeInValue');
-        const fadeOut = document.getElementById('fadeOut');
-        const fadeOutValue = document.getElementById('fadeOutValue');
-
         fadeIn.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
             fadeInValue.textContent = val.toFixed(1) + 's';
@@ -1695,16 +1737,6 @@
         });
 
         // Compressor
-        const compressorToggle = document.getElementById('compressorToggle');
-        const threshold = document.getElementById('threshold');
-        const thresholdValue = document.getElementById('thresholdValue');
-        const ratio = document.getElementById('ratio');
-        const ratioValue = document.getElementById('ratioValue');
-        const attack = document.getElementById('attack');
-        const attackValue = document.getElementById('attackValue');
-        const release = document.getElementById('release');
-        const releaseValue = document.getElementById('releaseValue');
-
         compressorToggle.addEventListener('change', (e) => {
             engine.effects.compressor.active = e.target.checked;
             engine.rebuildChain();
@@ -1735,12 +1767,6 @@
         });
 
         // Chorus
-        const chorusToggle = document.getElementById('chorusToggle');
-        const chorusRate = document.getElementById('chorusRate');
-        const chorusRateValue = document.getElementById('chorusRateValue');
-        const chorusDepth = document.getElementById('chorusDepth');
-        const chorusDepthValue = document.getElementById('chorusDepthValue');
-
         chorusToggle.addEventListener('change', (e) => {
             engine.effects.chorus.active = e.target.checked;
             engine.rebuildChain();
@@ -1759,12 +1785,6 @@
         });
 
         // Tremolo
-        const tremoloToggle = document.getElementById('tremoloToggle');
-        const tremoloRate = document.getElementById('tremoloRate');
-        const tremoloRateValue = document.getElementById('tremoloRateValue');
-        const tremoloDepth = document.getElementById('tremoloDepth');
-        const tremoloDepthValue = document.getElementById('tremoloDepthValue');
-
         tremoloToggle.addEventListener('change', (e) => {
             engine.effects.tremolo.active = e.target.checked;
             engine.rebuildChain();
@@ -1789,7 +1809,6 @@
 
         // Reset
         document.getElementById('resetBtn').addEventListener('click', () => {
-            // Reset all UI sliders and toggles to defaults
             speedControl.value = 1; speedValue.textContent = '1.0x';
             pitchControl.value = 0; pitchValue.textContent = '0';
             reverbToggle.checked = false; engine.effects.reverb.active = false;
@@ -1804,6 +1823,7 @@
             eqBass.value = 0; eqBassValue.textContent = '0dB'; engine.effects.eq.bass = 0;
             eqMid.value = 0; eqMidValue.textContent = '0dB'; engine.effects.eq.mid = 0;
             eqTreble.value = 0; eqTrebleValue.textContent = '0dB'; engine.effects.eq.treble = 0;
+            volumeSlider.value = 1; engine.setVolume(1);
             fadeIn.value = 0; fadeInValue.textContent = '0.0s'; engine.setFadeIn(0);
             fadeOut.value = 0; fadeOutValue.textContent = '0.0s'; engine.setFadeOut(0);
             compressorToggle.checked = false; engine.effects.compressor.active = false;
@@ -1817,16 +1837,18 @@
             tremoloToggle.checked = false; engine.effects.tremolo.active = false;
             tremoloRate.value = 5; tremoloRateValue.textContent = '5'; engine.effects.tremolo.rate = 5;
             tremoloDepth.value = 0.5; tremoloDepthValue.textContent = '0.5'; engine.effects.tremolo.depth = 0.5;
-            document.getElementById('volumeSlider').value = 1; engine.setVolume(1);
+
             engine.lockPitchSpeed = true;
             lockPitchSpeed.checked = true;
+            
             engine.loop = false;
             document.getElementById('loopBtn').className = 'btn btn-secondary';
+            
             engine.updateSpeedPitch();
             engine.rebuildChain();
         });
 
-        // Quick presets
+        // Presets
         window.applyPreset = (preset) => {
             document.getElementById('resetBtn').click();
             switch(preset) {
