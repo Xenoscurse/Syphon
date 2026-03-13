@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Syphon - Audio Effect Studio</title>
-    <meta name="theme-color" content="#1a1a3a">
+    <meta name="theme-color" id="themeColor" content="#1a1a3a">
     <meta name="description" content="Syphon - Transform your audio with speed, reverb, bass boost, chorus, tremolo and more">
     
     <!-- Fonts & Icons -->
@@ -13,18 +13,47 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Discord RPC (for Rich Presence) -->
+    <script src="https://cdn.jsdelivr.net/npm/discord-rpc@4.0.1/dist/discord-rpc.min.js"></script>
+    
     <style>
+        /* === THEME VARIABLES === */
+        :root {
+            --bg-gradient-start: #0a0a20;
+            --bg-gradient-end: #1a1a3a;
+            --card-bg: rgba(0, 0, 0, 0.3);
+            --text-primary: #fff;
+            --text-secondary: #9ca3af;
+            --accent: #8b5cf6;
+            --accent-dark: #6d28d9;
+            --border-color: #4a0e6e;
+            --slider-bg: #374151;
+        }
+
+        body.light-theme {
+            --bg-gradient-start: #f0f0f8;
+            --bg-gradient-end: #d0d0e0;
+            --card-bg: rgba(255, 255, 255, 0.5);
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a6a;
+            --accent: #6d28d9;
+            --accent-dark: #4c1d95;
+            --border-color: #a78bfa;
+            --slider-bg: #cbd5e0;
+        }
+
         /* === RESET & GLOBAL === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0a0a20 0%, #1a1a3a 100%);
-            color: #fff;
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            color: var(--text-primary);
             min-height: 100vh;
             line-height: 1.6;
+            transition: background 0.3s, color 0.3s;
         }
         ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: #1a1a3a; }
+        ::-webkit-scrollbar-track { background: var(--bg-gradient-end); }
         ::-webkit-scrollbar-thumb { background: #4a0e6e; border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: #6a0dad; }
 
@@ -34,25 +63,82 @@
             padding: 20px;
         }
 
-        /* === HEADER === */
-        header {
-            text-align: center;
-            padding: 40px 0;
-            animation: fadeIn 1s ease;
+        /* === TOP BAR === */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
         }
-        .logo {
-            font-size: 3.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #c4b5fd, #a78bfa, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .hamburger-menu {
+            position: relative;
+            display: inline-block;
+        }
+        .hamburger-icon {
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--accent);
+            padding: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            transition: background 0.3s;
+        }
+        .hamburger-icon:hover {
+            background: rgba(139,92,246,0.2);
+        }
+        .dropdown-menu {
+            position: absolute;
+            top: 60px;
+            right: 0;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            min-width: 220px;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            opacity: 0;
+            transform: translateY(-10px);
+            visibility: hidden;
+            transition: opacity 0.3s, transform 0.3s, visibility 0.3s;
+        }
+        .dropdown-menu.show {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+        .dropdown-menu h4 {
+            color: var(--accent);
             margin-bottom: 10px;
-            letter-spacing: 2px;
-            text-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+            font-size: 1.1rem;
         }
-        .tagline {
-            color: #9ca3af;
-            font-size: 1.2rem;
+        .theme-option, .discord-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .theme-option:hover, .discord-option:hover {
+            background: rgba(139,92,246,0.2);
+        }
+        .theme-option input[type="color"] {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+        }
+        .discord-option input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent);
         }
 
         /* === STATUS BADGE === */
@@ -62,23 +148,15 @@
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 500;
-            margin-left: 10px;
-        }
-        .status-ready {
-            background: #10b98120;
+            background: rgba(16,185,129,0.1);
             color: #10b981;
             border: 1px solid #10b981;
-        }
-        .status-processing {
-            background: #f59e0b20;
-            color: #f59e0b;
-            border: 1px solid #f59e0b;
         }
 
         /* === UPLOAD AREA === */
         .upload-area {
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px dashed #4a0e6e;
+            background: var(--card-bg);
+            border: 2px dashed var(--border-color);
             border-radius: 20px;
             padding: 60px 20px;
             text-align: center;
@@ -88,27 +166,35 @@
             backdrop-filter: blur(10px);
         }
         .upload-area:hover {
-            border-color: #8b5cf6;
+            border-color: var(--accent);
             background: rgba(139, 92, 246, 0.1);
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
         }
         .upload-area i {
             font-size: 4rem;
-            color: #8b5cf6;
+            color: var(--accent);
             margin-bottom: 20px;
         }
         .upload-area h3 { font-size: 1.5rem; margin-bottom: 10px; }
-        .upload-area p { color: #9ca3af; }
+        .upload-area p { color: var(--text-secondary); }
+
+        /* === FILE INFO === */
+        #fileInfo {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+            color: var(--text-secondary);
+        }
 
         /* === WAVEFORM & PROGRESS === */
         .waveform-container {
-            background: rgba(0, 0, 0, 0.3);
+            background: var(--card-bg);
             border-radius: 10px;
             padding: 20px;
             margin: 20px 0;
             height: 120px;
-            border: 1px solid #4a0e6e;
+            border: 1px solid var(--border-color);
             overflow: hidden;
         }
         #waveform-canvas {
@@ -120,13 +206,13 @@
             display: flex;
             justify-content: space-between;
             margin-top: 5px;
-            color: #9ca3af;
+            color: var(--text-secondary);
             font-size: 0.9rem;
         }
         .progress-bar {
             width: 100%;
             height: 4px;
-            background: #374151;
+            background: var(--slider-bg);
             border-radius: 2px;
             margin-top: 10px;
             cursor: pointer;
@@ -134,15 +220,77 @@
         }
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #8b5cf6, #c4b5fd);
+            background: linear-gradient(90deg, var(--accent), #c4b5fd);
             border-radius: 2px;
             width: 0%;
             transition: width 0.1s linear;
         }
 
+        /* === TRANSPORT CONTROLS === */
+        .transport-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: white;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-secondary:hover {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: var(--accent);
+        }
+
+        /* === VOLUME CONTROL === */
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--card-bg);
+            padding: 8px 20px;
+            border-radius: 50px;
+            border: 1px solid var(--border-color);
+        }
+        .volume-control i {
+            color: var(--accent);
+            font-size: 1.2rem;
+        }
+        .volume-control input {
+            width: 120px;
+            background: transparent;
+            accent-color: var(--accent);
+        }
+
         /* === EFFECTS PANEL === */
         .effects-panel {
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--card-bg);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 30px;
@@ -152,8 +300,8 @@
         .panel-title {
             font-size: 1.8rem;
             margin-bottom: 25px;
-            color: #c4b5fd;
-            border-bottom: 2px solid #4a0e6e;
+            color: var(--accent);
+            border-bottom: 2px solid var(--border-color);
             padding-bottom: 10px;
         }
         .effects-grid {
@@ -170,7 +318,7 @@
             position: relative;
         }
         .effect-card:hover {
-            border-color: #8b5cf6;
+            border-color: var(--accent);
             transform: translateY(-3px);
             box-shadow: 0 5px 20px rgba(139, 92, 246, 0.2);
         }
@@ -183,7 +331,7 @@
         }
         .effect-icon {
             font-size: 2rem;
-            color: #8b5cf6;
+            color: var(--accent);
         }
         .effect-name {
             font-size: 1.3rem;
@@ -191,7 +339,7 @@
             flex: 1;
         }
         .effect-description-toggle {
-            color: #9ca3af;
+            color: var(--text-secondary);
             font-size: 1rem;
             transition: transform 0.3s;
         }
@@ -200,13 +348,13 @@
         }
         .effect-description-content {
             display: none;
-            color: #b0b0b0;
+            color: var(--text-secondary);
             font-size: 0.9rem;
             margin-top: 10px;
             padding: 10px;
             background: rgba(0,0,0,0.2);
             border-radius: 8px;
-            border-left: 3px solid #8b5cf6;
+            border-left: 3px solid var(--accent);
         }
         .effect-description-content.show {
             display: block;
@@ -218,12 +366,12 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
-            color: #d1d5db;
+            color: var(--text-secondary);
         }
         input[type="range"] {
             width: 100%;
             height: 6px;
-            background: linear-gradient(90deg, #4a0e6e, #8b5cf6);
+            background: linear-gradient(90deg, var(--accent), var(--accent-dark));
             border-radius: 3px;
             -webkit-appearance: none;
         }
@@ -234,8 +382,8 @@
             background: white;
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 0 10px #8b5cf6;
-            border: 2px solid #8b5cf6;
+            box-shadow: 0 0 10px var(--accent);
+            border: 2px solid var(--accent);
         }
 
         /* === TOGGLE SWITCH === */
@@ -251,7 +399,7 @@
             position: absolute;
             cursor: pointer;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #374151;
+            background-color: var(--slider-bg);
             transition: .3s;
             border-radius: 24px;
         }
@@ -264,7 +412,7 @@
             transition: .3s;
             border-radius: 50%;
         }
-        input:checked + .toggle-slider { background-color: #8b5cf6; }
+        input:checked + .toggle-slider { background-color: var(--accent); }
         input:checked + .toggle-slider:before { transform: translateX(26px); }
 
         .effect-control {
@@ -277,7 +425,7 @@
             line-height: 24px;
         }
 
-        /* === BUTTONS === */
+        /* === ACTION BUTTONS === */
         .action-buttons {
             display: flex;
             gap: 15px;
@@ -285,116 +433,72 @@
             margin: 30px 0;
             flex-wrap: wrap;
         }
-        .btn {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 50px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Inter', sans-serif;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-            color: white;
-            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
-        }
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid #4a0e6e;
-        }
-        .btn-secondary:hover {
-            background: rgba(139, 92, 246, 0.2);
-            border-color: #8b5cf6;
-        }
-
-        /* === TRANSPORT CONTROLS === */
-        .transport-controls {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-
-        /* === VOLUME CONTROL === */
-        .volume-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 8px 20px;
-            border-radius: 50px;
-            border: 1px solid #4a0e6e;
-        }
-        .volume-control i {
-            color: #8b5cf6;
-            font-size: 1.2rem;
-        }
-        .volume-control input {
-            width: 120px;
-        }
 
         /* === FOOTER & SPINNER === */
         footer {
             text-align: center;
             padding: 40px 0;
-            color: #6b7280;
-            border-top: 1px solid #374151;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
             margin-top: 40px;
         }
-        footer a { color: #8b5cf6; text-decoration: none; }
+        footer a { color: var(--accent); text-decoration: none; }
         footer a:hover { text-decoration: underline; }
 
         .spinner {
             display: none;
             width: 40px; height: 40px;
             border: 3px solid rgba(139, 92, 246, 0.3);
-            border-top: 3px solid #8b5cf6;
+            border-top: 3px solid var(--accent);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 20px auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
 
         /* === RESPONSIVE === */
         @media (max-width: 768px) {
-            .logo { font-size: 2.5rem; }
-            .effects-grid { grid-template-columns: 1fr; }
-            .action-buttons { flex-direction: column; }
-            .btn { width: 100%; }
-            .transport-controls { flex-direction: column; align-items: center; }
-            .volume-control { width: 100%; justify-content: center; }
+            .btn { padding: 14px 32px; font-size: 1.1rem; }
+            input[type="range"]::-webkit-slider-thumb {
+                width: 24px;
+                height: 24px;
+            }
+            .transport-controls { gap: 10px; }
+            .volume-control input { width: 100px; }
+            .hamburger-icon { font-size: 2.5rem; }
+            .dropdown-menu { top: 70px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <div class="logo">Syphon</div>
-            <div class="tagline">Audio Effect Studio • Slow, Reverb, Bass Boost, Chorus, Tremolo & More</div>
-        </header>
-
-        <!-- Status Bar -->
-        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px;">
-            <span id="engineStatus" class="status-badge status-ready">
-                <i class="fas fa-check-circle"></i> MP3, WAV, M4A, FLAC, OGG (Export as WAV)
+        <!-- Top Bar with Hamburger Menu on Right -->
+        <div class="top-bar">
+            <span id="engineStatus" class="status-badge">
+                <i class="fas fa-check-circle"></i> MP3, WAV, M4A, FLAC, OGG (Export WAV)
             </span>
+            <div class="hamburger-menu">
+                <i class="fas fa-bars hamburger-icon" id="hamburgerBtn"></i>
+                <div class="dropdown-menu" id="themeMenu">
+                    <h4><i class="fas fa-palette"></i> Theme</h4>
+                    <div class="theme-option" onclick="setTheme('dark')">
+                        <i class="fas fa-moon"></i> Dark
+                    </div>
+                    <div class="theme-option" onclick="setTheme('light')">
+                        <i class="fas fa-sun"></i> Light
+                    </div>
+                    <div class="theme-option">
+                        <i class="fas fa-eye-dropper"></i> Custom
+                        <input type="color" id="customColor" value="#8b5cf6" onchange="setCustomColor(this.value)">
+                    </div>
+                    <h4 style="margin-top:15px;"><i class="fab fa-discord"></i> Discord</h4>
+                    <div class="discord-option">
+                        <input type="checkbox" id="discordToggle" onchange="toggleDiscordPresence(this.checked)">
+                        <label for="discordToggle">Show Rich Presence</label>
+                    </div>
+                    <p style="font-size:0.8rem; color:var(--text-secondary);">Works with Discord desktop app.</p>
+                </div>
+            </div>
         </div>
 
         <!-- File Upload Area -->
@@ -459,7 +563,7 @@
                         <div class="slider-label"><span>Pitch (semitones)</span><span id="pitchValue">0</span></div>
                         <input type="range" min="-12" max="12" step="1" value="0" id="pitchControl">
                     </div>
-                    <div style="font-size:0.8rem; color:#9ca3af;">
+                    <div style="font-size:0.8rem; color:var(--text-secondary);">
                         <i class="fas fa-link"></i> 
                         <label><input type="checkbox" id="lockPitchSpeed" checked> Lock pitch to speed</label>
                     </div>
@@ -625,7 +729,7 @@
                     </div>
                 </div>
 
-                <!-- Chorus (NEW) -->
+                <!-- Chorus -->
                 <div class="effect-card" id="card-chorus">
                     <div class="effect-header" onclick="toggleDescription('chorus-desc')">
                         <i class="fas fa-wave-square effect-icon"></i>
@@ -652,7 +756,7 @@
                     </div>
                 </div>
 
-                <!-- Tremolo (NEW) -->
+                <!-- Tremolo -->
                 <div class="effect-card" id="card-tremolo">
                     <div class="effect-header" onclick="toggleDescription('tremolo-desc')">
                         <i class="fas fa-chart-line effect-icon"></i>
@@ -683,7 +787,7 @@
 
         <!-- Presets -->
         <div style="text-align: center; margin: 20px 0;">
-            <h3 style="color: #c4b5fd; margin-bottom: 15px;">Quick Presets</h3>
+            <h3 style="color: var(--accent); margin-bottom: 15px;">Quick Presets</h3>
             <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                 <button class="btn btn-secondary" onclick="applyPreset('slowed')">Slowed + Reverb</button>
                 <button class="btn btn-secondary" onclick="applyPreset('nightcore')">Nightcore</button>
@@ -725,6 +829,104 @@
                 icon.classList.add('rotated');
             }
         }
+
+        // ==================== THEME & DISCORD ====================
+        function setTheme(mode) {
+            if (mode === 'dark') {
+                document.body.classList.remove('light-theme');
+                document.getElementById('themeColor').setAttribute('content', '#1a1a3a');
+            } else {
+                document.body.classList.add('light-theme');
+                document.getElementById('themeColor').setAttribute('content', '#d0d0e0');
+            }
+            localStorage.setItem('syphon-theme', mode);
+        }
+
+        function setCustomColor(color) {
+            document.documentElement.style.setProperty('--accent', color);
+            document.documentElement.style.setProperty('--accent-dark', adjustColor(color, -20));
+            localStorage.setItem('syphon-accent', color);
+        }
+
+        function adjustColor(hex, percent) {
+            let R = parseInt(hex.substring(1,3), 16);
+            let G = parseInt(hex.substring(3,5), 16);
+            let B = parseInt(hex.substring(5,7), 16);
+            R = Math.min(255, Math.max(0, R + percent));
+            G = Math.min(255, Math.max(0, G + percent));
+            B = Math.min(255, Math.max(0, B + percent));
+            return `#${((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)}`;
+        }
+
+        // Discord Rich Presence
+        let clientId = '123456789012345678'; // Replace with your actual Discord App ID
+        let presenceInterval = null;
+        let discordRPC = null;
+
+        function toggleDiscordPresence(enabled) {
+            if (enabled) {
+                if (typeof DiscordRPC === 'undefined') {
+                    console.warn('Discord RPC library not loaded');
+                    return;
+                }
+                if (discordRPC) return; // already active
+                discordRPC = new DiscordRPC.Client({ transport: 'ipc' });
+                discordRPC.on('ready', () => {
+                    setActivity();
+                    presenceInterval = setInterval(setActivity, 15000);
+                });
+                discordRPC.login({ clientId }).catch(err => {
+                    console.error('Discord RPC login failed:', err);
+                    discordRPC = null;
+                });
+            } else {
+                if (discordRPC) {
+                    discordRPC.clearPresence();
+                    discordRPC.destroy();
+                    discordRPC = null;
+                }
+                if (presenceInterval) {
+                    clearInterval(presenceInterval);
+                    presenceInterval = null;
+                }
+            }
+        }
+
+        function setActivity() {
+            if (!discordRPC) return;
+            const details = engine.isPlaying 
+                ? 'Editing audio'
+                : 'Browsing Syphon';
+            discordRPC.setActivity({
+                details: details,
+                state: 'Audio Effect Studio',
+                largeImageKey: 'syphon_logo',
+                largeImageText: 'Syphon',
+                instance: false,
+                startTimestamp: Date.now()
+            }).catch(console.error);
+        }
+
+        // Hamburger menu
+        document.getElementById('hamburgerBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('themeMenu').classList.toggle('show');
+        });
+
+        // Close menu when clicking outside
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('.hamburger-menu')) {
+                document.getElementById('themeMenu').classList.remove('show');
+            }
+        });
+
+        // Load saved theme
+        (function loadTheme() {
+            const savedTheme = localStorage.getItem('syphon-theme');
+            if (savedTheme === 'light') setTheme('light');
+            const savedAccent = localStorage.getItem('syphon-accent');
+            if (savedAccent) setCustomColor(savedAccent);
+        })();
 
         // ==================== AUDIO ENGINE ====================
         class SyphonEngine {
@@ -856,7 +1058,7 @@
                 const amp = height / 2;
                 ctx.clearRect(0, 0, width, height);
                 ctx.beginPath();
-                ctx.strokeStyle = '#8b5cf6';
+                ctx.strokeStyle = 'var(--accent)';
                 ctx.lineWidth = 2;
                 for (let i = 0; i < width; i++) {
                     let min = 1.0, max = -1.0;
@@ -1551,17 +1753,17 @@
         uploadArea.addEventListener('click', () => fileInput.click());
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
-            uploadArea.style.borderColor = '#8b5cf6';
+            uploadArea.style.borderColor = 'var(--accent)';
             uploadArea.style.background = 'rgba(139, 92, 246, 0.1)';
         });
         uploadArea.addEventListener('dragleave', (e) => {
             e.preventDefault();
-            uploadArea.style.borderColor = '#4a0e6e';
+            uploadArea.style.borderColor = 'var(--border-color)';
             uploadArea.style.background = 'rgba(255, 255, 255, 0.05)';
         });
         uploadArea.addEventListener('drop', async (e) => {
             e.preventDefault();
-            uploadArea.style.borderColor = '#4a0e6e';
+            uploadArea.style.borderColor = 'var(--border-color)';
             uploadArea.style.background = 'rgba(255, 255, 255, 0.05)';
             const file = e.dataTransfer.files[0];
             if (file && file.type.startsWith('audio/')) {
