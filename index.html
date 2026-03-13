@@ -13,8 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Discord RPC (for Rich Presence) -->
-    <script src="https://cdn.jsdelivr.net/npm/discord-rpc@4.0.1/dist/discord-rpc.min.js"></script>
+    <!-- Discord RPC (for Rich Presence) - Load with fallback -->
+    <script src="https://cdn.jsdelivr.net/npm/discord-rpc@4.0.1/dist/discord-rpc.min.js" onerror="console.log('Discord RPC failed to load, continuing without it')"></script>
     
     <style>
         /* === THEME VARIABLES === */
@@ -184,6 +184,8 @@
             transition: all 0.3s ease;
             margin: 30px 0;
             backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 10;
         }
         .upload-area:hover {
             border-color: var(--accent);
@@ -195,9 +197,17 @@
             font-size: 4rem;
             color: var(--accent);
             margin-bottom: 20px;
+            pointer-events: none;
         }
-        .upload-area h3 { font-size: 1.5rem; margin-bottom: 10px; }
-        .upload-area p { color: var(--text-secondary); }
+        .upload-area h3 { 
+            font-size: 1.5rem; 
+            margin-bottom: 10px; 
+            pointer-events: none;
+        }
+        .upload-area p { 
+            color: var(--text-secondary); 
+            pointer-events: none;
+        }
 
         /* === FILE INFO === */
         #fileInfo {
@@ -489,6 +499,14 @@
             .dropdown-menu { top: 70px; }
             .logo { font-size: 2.5rem; }
         }
+
+        /* Error fallback */
+        .error-message {
+            color: #ef4444;
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -502,7 +520,7 @@
         <!-- Top Bar with Hamburger Menu on Right -->
         <div class="top-bar">
             <span id="engineStatus" class="status-badge">
-                <i class="fas fa-check-circle"></i> MP3, WAV, M4A, FLAC, OGG (Export WAV)
+                <i class="fas fa-check-circle"></i> Initializing...
             </span>
             <div class="hamburger-menu">
                 <i class="fas fa-bars hamburger-icon" id="hamburgerBtn"></i>
@@ -844,21 +862,24 @@
     </div>
 
     <script>
-        // ==================== DESCRIPTION TOGGLE ====================
-        function toggleDescription(id) {
+        // ==================== GLOBAL FALLBACK ====================
+        // Ensure all functions are globally available
+        window.toggleDescription = function(id) {
             const desc = document.getElementById(id);
             const icon = document.getElementById(id + '-icon');
-            if (desc.classList.contains('show')) {
-                desc.classList.remove('show');
-                icon.classList.remove('rotated');
-            } else {
-                desc.classList.add('show');
-                icon.classList.add('rotated');
+            if (desc && icon) {
+                if (desc.classList.contains('show')) {
+                    desc.classList.remove('show');
+                    icon.classList.remove('rotated');
+                } else {
+                    desc.classList.add('show');
+                    icon.classList.add('rotated');
+                }
             }
-        }
+        };
 
         // ==================== THEME & DISCORD ====================
-        function setTheme(mode) {
+        window.setTheme = function(mode) {
             if (mode === 'dark') {
                 document.body.classList.remove('light-theme');
                 document.getElementById('themeColor').setAttribute('content', '#1a1a3a');
@@ -867,19 +888,17 @@
                 document.getElementById('themeColor').setAttribute('content', '#d0d0e0');
             }
             localStorage.setItem('syphon-theme', mode);
-            // Redraw waveform with new accent color
-            if (engine.audioBuffer) engine.drawWaveform();
-        }
+            if (window.engine && window.engine.audioBuffer) window.engine.drawWaveform();
+        };
 
-        function setCustomColor(color) {
+        window.setCustomColor = function(color) {
             document.documentElement.style.setProperty('--accent', color);
             document.documentElement.style.setProperty('--accent-dark', adjustColor(color, -20));
             localStorage.setItem('syphon-accent', color);
-            // Redraw waveform with new color
-            if (engine.audioBuffer) engine.drawWaveform();
-        }
+            if (window.engine && window.engine.audioBuffer) window.engine.drawWaveform();
+        };
 
-        function adjustColor(hex, percent) {
+        window.adjustColor = function(hex, percent) {
             let R = parseInt(hex.substring(1,3), 16);
             let G = parseInt(hex.substring(3,5), 16);
             let B = parseInt(hex.substring(5,7), 16);
@@ -887,20 +906,20 @@
             G = Math.min(255, Math.max(0, G + percent));
             B = Math.min(255, Math.max(0, B + percent));
             return `#${((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)}`;
-        }
+        };
 
         // Discord Rich Presence
-        let clientId = '123456789012345678'; // Replace with your actual Discord App ID
+        let clientId = '1482042731818909757'; // Replace with your actual Discord App ID
         let presenceInterval = null;
         let discordRPC = null;
 
-        function toggleDiscordPresence(enabled) {
+        window.toggleDiscordPresence = function(enabled) {
             if (enabled) {
                 if (typeof DiscordRPC === 'undefined') {
                     console.warn('Discord RPC library not loaded');
                     return;
                 }
-                if (discordRPC) return; // already active
+                if (discordRPC) return;
                 discordRPC = new DiscordRPC.Client({ transport: 'ipc' });
                 discordRPC.on('ready', () => {
                     setActivity();
@@ -921,11 +940,11 @@
                     presenceInterval = null;
                 }
             }
-        }
+        };
 
         function setActivity() {
             if (!discordRPC) return;
-            const details = engine.isPlaying 
+            const details = window.engine && window.engine.isPlaying 
                 ? 'Editing audio'
                 : 'Browsing Syphon';
             discordRPC.setActivity({
@@ -939,24 +958,37 @@
         }
 
         // Hamburger menu
-        document.getElementById('hamburgerBtn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            document.getElementById('themeMenu').classList.toggle('show');
-        });
-
-        // Close menu when clicking outside
-        window.addEventListener('click', (e) => {
-            if (!e.target.closest('.hamburger-menu')) {
-                document.getElementById('themeMenu').classList.remove('show');
+        document.addEventListener('DOMContentLoaded', function() {
+            const hamburgerBtn = document.getElementById('hamburgerBtn');
+            const themeMenu = document.getElementById('themeMenu');
+            
+            if (hamburgerBtn && themeMenu) {
+                hamburgerBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    themeMenu.classList.toggle('show');
+                });
             }
+
+            // Close menu when clicking outside
+            window.addEventListener('click', (e) => {
+                if (!e.target.closest('.hamburger-menu')) {
+                    if (themeMenu) themeMenu.classList.remove('show');
+                }
+            });
         });
 
         // Load saved theme
         (function loadTheme() {
             const savedTheme = localStorage.getItem('syphon-theme');
-            if (savedTheme === 'light') setTheme('light');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+                document.getElementById('themeColor')?.setAttribute('content', '#d0d0e0');
+            }
             const savedAccent = localStorage.getItem('syphon-accent');
-            if (savedAccent) setCustomColor(savedAccent);
+            if (savedAccent) {
+                document.documentElement.style.setProperty('--accent', savedAccent);
+                document.documentElement.style.setProperty('--accent-dark', adjustColor(savedAccent, -20));
+            }
         })();
 
         // ==================== AUDIO ENGINE ====================
@@ -971,10 +1003,6 @@
                 this.masterGain = null;
                 this.loop = false;
                 this.fadeOutTimeout = null;
-
-                // LFOs for chorus/tremolo
-                this.chorusLFO = null;
-                this.tremoloLFO = null;
 
                 this.nodes = {
                     bassEQ: null,
@@ -1032,16 +1060,29 @@
                     this.masterGain = this.audioContext.createGain();
                     this.masterGain.gain.value = this.effects.volume;
                     this.masterGain.connect(this.audioContext.destination);
-                    document.getElementById('engineStatus').innerHTML = '<i class="fas fa-check-circle"></i> MP3, WAV, M4A, FLAC, OGG (Export as WAV)';
-                    document.getElementById('engineStatus').className = 'status-badge status-ready';
+                    
+                    // Update status
+                    const statusEl = document.getElementById('engineStatus');
+                    if (statusEl) {
+                        statusEl.innerHTML = '<i class="fas fa-check-circle"></i> MP3, WAV, M4A, FLAC, OGG (Export WAV)';
+                        statusEl.className = 'status-badge status-ready';
+                    }
                 } catch (error) {
                     console.error('Audio context failed:', error);
-                    document.getElementById('engineStatus').innerHTML = '<i class="fas fa-exclamation-circle"></i> Audio not supported';
-                    document.getElementById('engineStatus').className = 'status-badge status-processing';
+                    const statusEl = document.getElementById('engineStatus');
+                    if (statusEl) {
+                        statusEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Audio not supported';
+                        statusEl.className = 'status-badge status-processing';
+                    }
                 }
             }
 
             async loadAudioFile(file) {
+                if (!this.audioContext) {
+                    alert('Audio context not initialized. Please refresh the page.');
+                    return;
+                }
+
                 if (this.sourceNode) {
                     try { this.sourceNode.stop(); } catch (e) {}
                     this.sourceNode = null;
@@ -1054,33 +1095,53 @@
                     this.fadeOutTimeout = null;
                 }
                 
-                document.getElementById('currentTime').textContent = '0:00';
-                document.getElementById('progressFill').style.width = '0%';
+                const currentTimeEl = document.getElementById('currentTime');
+                const progressFillEl = document.getElementById('progressFill');
+                if (currentTimeEl) currentTimeEl.textContent = '0:00';
+                if (progressFillEl) progressFillEl.style.width = '0%';
                 
-                const arrayBuffer = await file.arrayBuffer();
-                this.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-                this.drawWaveform();
-                document.getElementById('fileName').textContent = file.name;
-                document.getElementById('fileDuration').textContent = this.formatTime(this.audioBuffer.duration);
-                document.getElementById('totalTime').textContent = this.formatTime(this.audioBuffer.duration);
-                document.getElementById('playPauseBtn').disabled = false;
-                document.getElementById('loopBtn').disabled = false;
-                document.getElementById('restartBtn').disabled = false;
-                document.getElementById('exportBtn').disabled = false;
-                this.updatePlayPauseButton();
-                
-                this.loop = false;
-                const loopBtn = document.getElementById('loopBtn');
-                loopBtn.className = 'btn btn-secondary';
-                
-                this.buildEffectChain();
-                
-                return this.audioBuffer;
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    this.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+                    this.drawWaveform();
+                    
+                    const fileNameEl = document.getElementById('fileName');
+                    const fileDurationEl = document.getElementById('fileDuration');
+                    const totalTimeEl = document.getElementById('totalTime');
+                    
+                    if (fileNameEl) fileNameEl.textContent = file.name;
+                    if (fileDurationEl) fileDurationEl.textContent = this.formatTime(this.audioBuffer.duration);
+                    if (totalTimeEl) totalTimeEl.textContent = this.formatTime(this.audioBuffer.duration);
+                    
+                    const playPauseBtn = document.getElementById('playPauseBtn');
+                    const loopBtn = document.getElementById('loopBtn');
+                    const restartBtn = document.getElementById('restartBtn');
+                    const exportBtn = document.getElementById('exportBtn');
+                    
+                    if (playPauseBtn) playPauseBtn.disabled = false;
+                    if (loopBtn) loopBtn.disabled = false;
+                    if (restartBtn) restartBtn.disabled = false;
+                    if (exportBtn) exportBtn.disabled = false;
+                    
+                    this.updatePlayPauseButton();
+                    
+                    this.loop = false;
+                    if (loopBtn) loopBtn.className = 'btn btn-secondary';
+                    
+                    this.buildEffectChain();
+                    
+                    return this.audioBuffer;
+                } catch (error) {
+                    console.error('Error loading audio file:', error);
+                    alert('Error loading audio file. Please try a different file.');
+                }
             }
 
             drawWaveform() {
                 if (!this.audioBuffer) return;
                 const canvas = document.getElementById('waveform-canvas');
+                if (!canvas) return;
+                
                 const ctx = canvas.getContext('2d');
                 const width = canvas.width = canvas.clientWidth;
                 const height = canvas.height = canvas.clientHeight;
@@ -1088,8 +1149,7 @@
                 const step = Math.ceil(data.length / width);
                 const amp = height / 2;
                 
-                // Get the current accent color (computed style)
-                const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+                const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#8b5cf6';
                 
                 ctx.clearRect(0, 0, width, height);
                 ctx.beginPath();
@@ -1122,22 +1182,20 @@
                 return impulse;
             }
 
-            // Create chorus effect: delay with LFO modulating delayTime
             createChorus(inputNode, rate, depth) {
                 const delay = this.audioContext.createDelay(0.1);
-                delay.delayTime.value = 0.02; // base delay 20ms
+                delay.delayTime.value = 0.02;
                 
                 const lfo = this.audioContext.createOscillator();
                 lfo.type = 'sine';
                 lfo.frequency.value = rate;
                 
                 const lfoGain = this.audioContext.createGain();
-                lfoGain.gain.value = depth * 0.01; // max depth 0.01 (10ms variation)
+                lfoGain.gain.value = depth * 0.01;
                 
                 lfo.connect(lfoGain);
                 lfoGain.connect(delay.delayTime);
                 
-                // Mix dry/wet
                 const dryGain = this.audioContext.createGain();
                 dryGain.gain.value = 0.7;
                 const wetGain = this.audioContext.createGain();
@@ -1156,17 +1214,16 @@
                 return { delay, lfo, lfoGain, dryGain, wetGain, output };
             }
 
-            // Create tremolo: gain modulated by LFO
             createTremolo(inputNode, rate, depth) {
                 const gain = this.audioContext.createGain();
-                gain.gain.value = 1 - depth * 0.5; // base gain
+                gain.gain.value = 1 - depth * 0.5;
                 
                 const lfo = this.audioContext.createOscillator();
                 lfo.type = 'sine';
                 lfo.frequency.value = rate;
                 
                 const lfoGain = this.audioContext.createGain();
-                lfoGain.gain.value = depth * 0.5; // modulation depth
+                lfoGain.gain.value = depth * 0.5;
                 
                 lfo.connect(lfoGain);
                 const constant = this.audioContext.createConstantSource();
@@ -1174,7 +1231,7 @@
                 constant.start();
                 
                 const summer = this.audioContext.createGain();
-                summer.gain.value = 0.5; // scale
+                summer.gain.value = 0.5;
                 
                 lfo.connect(summer);
                 constant.connect(summer);
@@ -1202,7 +1259,7 @@
 
                 let lastNode = this.sourceNode;
 
-                // ---- EQ ----
+                // EQ
                 const bassEQ = this.audioContext.createBiquadFilter();
                 bassEQ.type = 'lowshelf';
                 bassEQ.frequency.value = 250;
@@ -1230,7 +1287,7 @@
                 this.nodes.midEQ = midEQ;
                 this.nodes.trebleEQ = trebleEQ;
 
-                // ---- Bass Boost ----
+                // Bass Boost
                 if (this.effects.bass.active) {
                     const bassBoost = this.audioContext.createBiquadFilter();
                     bassBoost.type = 'lowshelf';
@@ -1259,7 +1316,7 @@
                     this.nodes.bassClipper = null;
                 }
 
-                // ---- Compressor ----
+                // Compressor
                 if (this.effects.compressor.active) {
                     const compressor = this.audioContext.createDynamicsCompressor();
                     compressor.threshold.value = this.effects.compressor.threshold;
@@ -1273,7 +1330,7 @@
                     this.nodes.compressor = null;
                 }
 
-                // ---- Delay ----
+                // Delay
                 if (this.effects.delay.active) {
                     const delay = this.audioContext.createDelay(2.0);
                     delay.delayTime.value = this.effects.delay.time;
@@ -1290,7 +1347,7 @@
                     this.nodes.delayFeedback = null;
                 }
 
-                // ---- Chorus ----
+                // Chorus
                 if (this.effects.chorus.active) {
                     const chorus = this.createChorus(lastNode, this.effects.chorus.rate, this.effects.chorus.depth * 100);
                     lastNode = chorus.output;
@@ -1302,7 +1359,7 @@
                     this.nodes.chorus = null;
                 }
 
-                // ---- Tremolo ----
+                // Tremolo
                 if (this.effects.tremolo.active) {
                     const tremolo = this.createTremolo(lastNode, this.effects.tremolo.rate, this.effects.tremolo.depth);
                     lastNode = tremolo.gain;
@@ -1314,7 +1371,7 @@
                     this.nodes.tremolo = null;
                 }
 
-                // ---- Reverb ----
+                // Reverb
                 if (this.effects.reverb.active) {
                     const dryGain = this.audioContext.createGain();
                     const wetGain = this.audioContext.createGain();
@@ -1338,7 +1395,7 @@
                     this.nodes.reverb = { dryGain: null, wetGain: null, convolver: null, reverbSum: null };
                 }
 
-                // ---- Fade Gain ----
+                // Fade Gain
                 const fadeGain = this.audioContext.createGain();
                 fadeGain.gain.value = 1;
                 lastNode.connect(fadeGain);
@@ -1400,7 +1457,7 @@
             updateTremolo() {
                 if (this.nodes.tremolo) {
                     this.nodes.tremolo.lfo.frequency.value = this.effects.tremolo.rate;
-                    this.rebuildChain(); // Rebuild needed for tremolo depth changes
+                    this.rebuildChain();
                 }
             }
 
@@ -1493,9 +1550,14 @@
                 if (!this.isPlaying) return;
                 const current = this.audioContext.currentTime - this.startTime;
                 if (current < this.audioBuffer.duration) {
-                    document.getElementById('currentTime').textContent = this.formatTime(current);
-                    const percent = (current / this.audioBuffer.duration) * 100;
-                    document.getElementById('progressFill').style.width = percent + '%';
+                    const currentTimeEl = document.getElementById('currentTime');
+                    const progressFillEl = document.getElementById('progressFill');
+                    
+                    if (currentTimeEl) currentTimeEl.textContent = this.formatTime(current);
+                    if (progressFillEl) {
+                        const percent = (current / this.audioBuffer.duration) * 100;
+                        progressFillEl.style.width = percent + '%';
+                    }
                     requestAnimationFrame(() => this.updateTime());
                 } else {
                     if (this.loop) {
@@ -1511,8 +1573,13 @@
                 this.pauseTime = 0;
                 this.startTime = 0;
                 this.sourceNode = null;
-                document.getElementById('currentTime').textContent = '0:00';
-                document.getElementById('progressFill').style.width = '0%';
+                
+                const currentTimeEl = document.getElementById('currentTime');
+                const progressFillEl = document.getElementById('progressFill');
+                
+                if (currentTimeEl) currentTimeEl.textContent = '0:00';
+                if (progressFillEl) progressFillEl.style.width = '0%';
+                
                 this.updatePlayPauseButton();
                 if (this.nodes.fadeGain) {
                     this.nodes.fadeGain.gain.cancelScheduledValues(this.audioContext.currentTime);
@@ -1528,13 +1595,17 @@
 
             updatePlayPauseButton() {
                 const btn = document.getElementById('playPauseBtn');
-                btn.innerHTML = this.isPlaying ? '<i class="fas fa-pause"></i> Pause' : '<i class="fas fa-play"></i> Play';
+                if (btn) {
+                    btn.innerHTML = this.isPlaying ? '<i class="fas fa-pause"></i> Pause' : '<i class="fas fa-play"></i> Play';
+                }
             }
 
             toggleLoop() {
                 this.loop = !this.loop;
                 const loopBtn = document.getElementById('loopBtn');
-                loopBtn.className = this.loop ? 'btn btn-primary' : 'btn btn-secondary';
+                if (loopBtn) {
+                    loopBtn.className = this.loop ? 'btn btn-primary' : 'btn btn-secondary';
+                }
             }
 
             setVolume(value) {
@@ -1553,7 +1624,9 @@
 
             async exportAudio() {
                 if (!this.audioBuffer) return;
-                document.getElementById('spinner').style.display = 'block';
+                
+                const spinner = document.getElementById('spinner');
+                if (spinner) spinner.style.display = 'block';
 
                 const offlineCtx = new OfflineAudioContext(
                     this.audioBuffer.numberOfChannels,
@@ -1609,16 +1682,6 @@
                     last.connect(d); last = d;
                 }
 
-                // Chorus (simplified: pass through for offline export)
-                if (this.effects.chorus.active) {
-                    // For offline, we could implement a simplified chorus, but for now pass through
-                }
-
-                // Tremolo (pass through for offline)
-                if (this.effects.tremolo.active) {
-                    // Pass through
-                }
-
                 // Reverb
                 if (this.effects.reverb.active) {
                     const dry = offlineCtx.createGain(); dry.gain.value = 1 - this.effects.reverb.wet;
@@ -1636,17 +1699,22 @@
                 offlineGain.connect(offlineCtx.destination);
                 source.start();
 
-                const renderedBuffer = await offlineCtx.startRendering();
-                const wavBlob = this.bufferToWav(renderedBuffer);
+                try {
+                    const renderedBuffer = await offlineCtx.startRendering();
+                    const wavBlob = this.bufferToWav(renderedBuffer);
 
-                const url = URL.createObjectURL(wavBlob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'syphon_processed.wav';
-                a.click();
-                URL.revokeObjectURL(url);
-
-                document.getElementById('spinner').style.display = 'none';
+                    const url = URL.createObjectURL(wavBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'syphon_processed.wav';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error('Export failed:', error);
+                    alert('Export failed. Please try again.');
+                } finally {
+                    if (spinner) spinner.style.display = 'none';
+                }
             }
 
             bufferToWav(buffer) {
@@ -1710,420 +1778,593 @@
         }
 
         // ==================== INITIALIZATION ====================
-        // Initialize engine after DOM is fully loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            const engine = new SyphonEngine();
+        // Initialize everything when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing Syphon...');
+            
+            // Create engine instance and make it globally available
+            window.engine = new SyphonEngine();
 
+            // Get DOM elements
             const uploadArea = document.getElementById('uploadArea');
             const fileInput = document.getElementById('fileInput');
             const fileInfo = document.getElementById('fileInfo');
 
-            const speedControl = document.getElementById('speedControl');
-            const speedValue = document.getElementById('speedValue');
-            const pitchControl = document.getElementById('pitchControl');
-            const pitchValue = document.getElementById('pitchValue');
-            const lockPitchSpeed = document.getElementById('lockPitchSpeed');
+            // File upload with safety checks
+            if (uploadArea && fileInput) {
+                // Click handler
+                uploadArea.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Upload area clicked');
+                    fileInput.click();
+                });
 
-            const reverbToggle = document.getElementById('reverbToggle');
-            const reverbDecay = document.getElementById('reverbDecay');
-            const reverbDecayValue = document.getElementById('reverbDecayValue');
-            const reverbWet = document.getElementById('reverbWet');
-            const reverbWetValue = document.getElementById('reverbWetValue');
+                // Dragover handler
+                uploadArea.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    uploadArea.style.borderColor = 'var(--accent)';
+                    uploadArea.style.background = 'rgba(139, 92, 246, 0.1)';
+                });
 
-            const bassToggle = document.getElementById('bassToggle');
-            const bassLevel = document.getElementById('bassLevel');
-            const bassValue = document.getElementById('bassValue');
-            const bassFreq = document.getElementById('bassFreq');
-            const bassFreqValue = document.getElementById('bassFreqValue');
+                // Dragleave handler
+                uploadArea.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    uploadArea.style.borderColor = 'var(--border-color)';
+                    uploadArea.style.background = 'rgba(255, 255, 255, 0.05)';
+                });
 
-            const delayToggle = document.getElementById('delayToggle');
-            const delayTime = document.getElementById('delayTime');
-            const delayTimeValue = document.getElementById('delayTimeValue');
-            const delayFeedback = document.getElementById('delayFeedback');
-            const delayFeedbackValue = document.getElementById('delayFeedbackValue');
+                // Drop handler
+                uploadArea.addEventListener('drop', async function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    uploadArea.style.borderColor = 'var(--border-color)';
+                    uploadArea.style.background = 'rgba(255, 255, 255, 0.05)';
+                    
+                    const file = e.dataTransfer.files[0];
+                    if (file && file.type.startsWith('audio/')) {
+                        if (fileInfo) fileInfo.style.display = 'block';
+                        await window.engine.loadAudioFile(file);
+                    } else {
+                        alert('Please drop a valid audio file.');
+                    }
+                });
 
-            const eqBass = document.getElementById('eqBass');
-            const eqBassValue = document.getElementById('eqBassValue');
-            const eqMid = document.getElementById('eqMid');
-            const eqMidValue = document.getElementById('eqMidValue');
-            const eqTreble = document.getElementById('eqTreble');
-            const eqTrebleValue = document.getElementById('eqTrebleValue');
+                // File input change handler
+                fileInput.addEventListener('change', async function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        if (fileInfo) fileInfo.style.display = 'block';
+                        await window.engine.loadAudioFile(file);
+                    }
+                });
 
-            const volumeSlider = document.getElementById('volumeSlider');
+                console.log('File upload handlers attached');
+            } else {
+                console.error('Upload area or file input not found');
+            }
 
-            const fadeIn = document.getElementById('fadeIn');
-            const fadeInValue = document.getElementById('fadeInValue');
-            const fadeOut = document.getElementById('fadeOut');
-            const fadeOutValue = document.getElementById('fadeOutValue');
-
-            const compressorToggle = document.getElementById('compressorToggle');
-            const threshold = document.getElementById('threshold');
-            const thresholdValue = document.getElementById('thresholdValue');
-            const ratio = document.getElementById('ratio');
-            const ratioValue = document.getElementById('ratioValue');
-            const attack = document.getElementById('attack');
-            const attackValue = document.getElementById('attackValue');
-            const release = document.getElementById('release');
-            const releaseValue = document.getElementById('releaseValue');
-
-            const chorusToggle = document.getElementById('chorusToggle');
-            const chorusRate = document.getElementById('chorusRate');
-            const chorusRateValue = document.getElementById('chorusRateValue');
-            const chorusDepth = document.getElementById('chorusDepth');
-            const chorusDepthValue = document.getElementById('chorusDepthValue');
-
-            const tremoloToggle = document.getElementById('tremoloToggle');
-            const tremoloRate = document.getElementById('tremoloRate');
-            const tremoloRateValue = document.getElementById('tremoloRateValue');
-            const tremoloDepth = document.getElementById('tremoloDepth');
-            const tremoloDepthValue = document.getElementById('tremoloDepthValue');
-
-            // File upload
-            uploadArea.addEventListener('click', () => fileInput.click());
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.style.borderColor = 'var(--accent)';
-                uploadArea.style.background = 'rgba(139, 92, 246, 0.1)';
-            });
-            uploadArea.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                uploadArea.style.borderColor = 'var(--border-color)';
-                uploadArea.style.background = 'rgba(255, 255, 255, 0.05)';
-            });
-            uploadArea.addEventListener('drop', async (e) => {
-                e.preventDefault();
-                uploadArea.style.borderColor = 'var(--border-color)';
-                uploadArea.style.background = 'rgba(255, 255, 255, 0.05)';
-                const file = e.dataTransfer.files[0];
-                if (file && file.type.startsWith('audio/')) {
-                    fileInfo.style.display = 'block';
-                    await engine.loadAudioFile(file);
-                }
-            });
-            fileInput.addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    fileInfo.style.display = 'block';
-                    await engine.loadAudioFile(file);
-                }
-            });
+            // Get all control elements
+            const elements = {
+                speedControl: document.getElementById('speedControl'),
+                speedValue: document.getElementById('speedValue'),
+                pitchControl: document.getElementById('pitchControl'),
+                pitchValue: document.getElementById('pitchValue'),
+                lockPitchSpeed: document.getElementById('lockPitchSpeed'),
+                reverbToggle: document.getElementById('reverbToggle'),
+                reverbDecay: document.getElementById('reverbDecay'),
+                reverbDecayValue: document.getElementById('reverbDecayValue'),
+                reverbWet: document.getElementById('reverbWet'),
+                reverbWetValue: document.getElementById('reverbWetValue'),
+                bassToggle: document.getElementById('bassToggle'),
+                bassLevel: document.getElementById('bassLevel'),
+                bassValue: document.getElementById('bassValue'),
+                bassFreq: document.getElementById('bassFreq'),
+                bassFreqValue: document.getElementById('bassFreqValue'),
+                delayToggle: document.getElementById('delayToggle'),
+                delayTime: document.getElementById('delayTime'),
+                delayTimeValue: document.getElementById('delayTimeValue'),
+                delayFeedback: document.getElementById('delayFeedback'),
+                delayFeedbackValue: document.getElementById('delayFeedbackValue'),
+                eqBass: document.getElementById('eqBass'),
+                eqBassValue: document.getElementById('eqBassValue'),
+                eqMid: document.getElementById('eqMid'),
+                eqMidValue: document.getElementById('eqMidValue'),
+                eqTreble: document.getElementById('eqTreble'),
+                eqTrebleValue: document.getElementById('eqTrebleValue'),
+                volumeSlider: document.getElementById('volumeSlider'),
+                fadeIn: document.getElementById('fadeIn'),
+                fadeInValue: document.getElementById('fadeInValue'),
+                fadeOut: document.getElementById('fadeOut'),
+                fadeOutValue: document.getElementById('fadeOutValue'),
+                compressorToggle: document.getElementById('compressorToggle'),
+                threshold: document.getElementById('threshold'),
+                thresholdValue: document.getElementById('thresholdValue'),
+                ratio: document.getElementById('ratio'),
+                ratioValue: document.getElementById('ratioValue'),
+                attack: document.getElementById('attack'),
+                attackValue: document.getElementById('attackValue'),
+                release: document.getElementById('release'),
+                releaseValue: document.getElementById('releaseValue'),
+                chorusToggle: document.getElementById('chorusToggle'),
+                chorusRate: document.getElementById('chorusRate'),
+                chorusRateValue: document.getElementById('chorusRateValue'),
+                chorusDepth: document.getElementById('chorusDepth'),
+                chorusDepthValue: document.getElementById('chorusDepthValue'),
+                tremoloToggle: document.getElementById('tremoloToggle'),
+                tremoloRate: document.getElementById('tremoloRate'),
+                tremoloRateValue: document.getElementById('tremoloRateValue'),
+                tremoloDepth: document.getElementById('tremoloDepth'),
+                tremoloDepthValue: document.getElementById('tremoloDepthValue'),
+                playPauseBtn: document.getElementById('playPauseBtn'),
+                loopBtn: document.getElementById('loopBtn'),
+                restartBtn: document.getElementById('restartBtn'),
+                exportBtn: document.getElementById('exportBtn'),
+                resetBtn: document.getElementById('resetBtn'),
+                progressBar: document.getElementById('progressBar')
+            };
 
             // Transport
-            document.getElementById('playPauseBtn').addEventListener('click', () => {
-                if (engine.isPlaying) engine.pause(); else engine.play();
-            });
-            document.getElementById('loopBtn').addEventListener('click', () => engine.toggleLoop());
-            document.getElementById('restartBtn').addEventListener('click', () => engine.restart());
+            if (elements.playPauseBtn) {
+                elements.playPauseBtn.addEventListener('click', () => {
+                    if (window.engine.isPlaying) window.engine.pause(); else window.engine.play();
+                });
+            }
+            if (elements.loopBtn) {
+                elements.loopBtn.addEventListener('click', () => window.engine.toggleLoop());
+            }
+            if (elements.restartBtn) {
+                elements.restartBtn.addEventListener('click', () => window.engine.restart());
+            }
 
             // Volume
-            volumeSlider.addEventListener('input', (e) => engine.setVolume(parseFloat(e.target.value)));
+            if (elements.volumeSlider) {
+                elements.volumeSlider.addEventListener('input', (e) => window.engine.setVolume(parseFloat(e.target.value)));
+            }
 
             // Speed
-            speedControl.addEventListener('input', (e) => {
-                const val = parseFloat(e.target.value);
-                speedValue.textContent = val.toFixed(2) + 'x';
-                if (lockPitchSpeed.checked) {
-                    const semitones = Math.round(12 * Math.log2(val));
-                    pitchControl.value = Math.max(-12, Math.min(12, semitones));
-                    pitchValue.textContent = pitchControl.value;
-                    engine.effects.pitch = pitchControl.value;
-                }
-                engine.effects.speed = val;
-                engine.updateSpeedPitch();
-            });
+            if (elements.speedControl && elements.speedValue) {
+                elements.speedControl.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    elements.speedValue.textContent = val.toFixed(2) + 'x';
+                    if (elements.lockPitchSpeed && elements.lockPitchSpeed.checked) {
+                        const semitones = Math.round(12 * Math.log2(val));
+                        if (elements.pitchControl && elements.pitchValue) {
+                            elements.pitchControl.value = Math.max(-12, Math.min(12, semitones));
+                            elements.pitchValue.textContent = elements.pitchControl.value;
+                            window.engine.effects.pitch = elements.pitchControl.value;
+                        }
+                    }
+                    window.engine.effects.speed = val;
+                    window.engine.updateSpeedPitch();
+                });
+            }
 
-            pitchControl.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                pitchValue.textContent = val;
-                if (lockPitchSpeed.checked) {
-                    const speed = Math.pow(2, val / 12);
-                    speedControl.value = Math.max(0.25, Math.min(2.5, speed));
-                    speedValue.textContent = parseFloat(speedControl.value).toFixed(2) + 'x';
-                    engine.effects.speed = parseFloat(speedControl.value);
-                }
-                engine.effects.pitch = val;
-                engine.updateSpeedPitch();
-            });
+            // Pitch
+            if (elements.pitchControl && elements.pitchValue) {
+                elements.pitchControl.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    elements.pitchValue.textContent = val;
+                    if (elements.lockPitchSpeed && elements.lockPitchSpeed.checked) {
+                        const speed = Math.pow(2, val / 12);
+                        if (elements.speedControl && elements.speedValue) {
+                            elements.speedControl.value = Math.max(0.25, Math.min(2.5, speed));
+                            elements.speedValue.textContent = parseFloat(elements.speedControl.value).toFixed(2) + 'x';
+                            window.engine.effects.speed = parseFloat(elements.speedControl.value);
+                        }
+                    }
+                    window.engine.effects.pitch = val;
+                    window.engine.updateSpeedPitch();
+                });
+            }
 
-            lockPitchSpeed.addEventListener('change', (e) => {
-                engine.lockPitchSpeed = e.target.checked;
-                if (e.target.checked) {
-                    const pitch = parseInt(pitchControl.value);
-                    const speed = Math.pow(2, pitch / 12);
-                    speedControl.value = Math.max(0.25, Math.min(2.5, speed));
-                    speedValue.textContent = parseFloat(speedControl.value).toFixed(2) + 'x';
-                    engine.effects.speed = parseFloat(speedControl.value);
-                }
-                engine.updateSpeedPitch();
-            });
+            // Lock
+            if (elements.lockPitchSpeed) {
+                elements.lockPitchSpeed.addEventListener('change', (e) => {
+                    window.engine.lockPitchSpeed = e.target.checked;
+                    if (e.target.checked && elements.pitchControl && elements.speedControl && elements.speedValue) {
+                        const pitch = parseInt(elements.pitchControl.value);
+                        const speed = Math.pow(2, pitch / 12);
+                        elements.speedControl.value = Math.max(0.25, Math.min(2.5, speed));
+                        elements.speedValue.textContent = parseFloat(elements.speedControl.value).toFixed(2) + 'x';
+                        window.engine.effects.speed = parseFloat(elements.speedControl.value);
+                    }
+                    window.engine.updateSpeedPitch();
+                });
+            }
 
             // Reverb
-            reverbToggle.addEventListener('change', (e) => {
-                engine.effects.reverb.active = e.target.checked;
-                engine.rebuildChain();
-            });
-            reverbDecay.addEventListener('input', (e) => {
-                const val = parseFloat(e.target.value);
-                reverbDecayValue.textContent = val.toFixed(1) + 's';
-                engine.effects.reverb.decay = val;
-                engine.rebuildChain();
-            });
-            reverbWet.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                reverbWetValue.textContent = val + '%';
-                engine.effects.reverb.wet = val / 100;
-                engine.updateReverbWet();
-            });
+            if (elements.reverbToggle) {
+                elements.reverbToggle.addEventListener('change', (e) => {
+                    window.engine.effects.reverb.active = e.target.checked;
+                    window.engine.rebuildChain();
+                });
+            }
+            if (elements.reverbDecay && elements.reverbDecayValue) {
+                elements.reverbDecay.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    elements.reverbDecayValue.textContent = val.toFixed(1) + 's';
+                    window.engine.effects.reverb.decay = val;
+                    window.engine.rebuildChain();
+                });
+            }
+            if (elements.reverbWet && elements.reverbWetValue) {
+                elements.reverbWet.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    elements.reverbWetValue.textContent = val + '%';
+                    window.engine.effects.reverb.wet = val / 100;
+                    window.engine.updateReverbWet();
+                });
+            }
 
             // Bass
-            bassToggle.addEventListener('change', (e) => {
-                engine.effects.bass.active = e.target.checked;
-                engine.rebuildChain();
-            });
-            bassLevel.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                bassValue.textContent = val + 'dB';
-                engine.effects.bass.gain = val;
-                engine.updateBass();
-            });
-            bassFreq.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                bassFreqValue.textContent = val + 'Hz';
-                engine.effects.bass.freq = val;
-                engine.updateBass();
-            });
+            if (elements.bassToggle) {
+                elements.bassToggle.addEventListener('change', (e) => {
+                    window.engine.effects.bass.active = e.target.checked;
+                    window.engine.rebuildChain();
+                });
+            }
+            if (elements.bassLevel && elements.bassValue) {
+                elements.bassLevel.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    elements.bassValue.textContent = val + 'dB';
+                    window.engine.effects.bass.gain = val;
+                    window.engine.updateBass();
+                });
+            }
+            if (elements.bassFreq && elements.bassFreqValue) {
+                elements.bassFreq.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    elements.bassFreqValue.textContent = val + 'Hz';
+                    window.engine.effects.bass.freq = val;
+                    window.engine.updateBass();
+                });
+            }
 
             // Delay
-            delayToggle.addEventListener('change', (e) => {
-                engine.effects.delay.active = e.target.checked;
-                engine.rebuildChain();
-            });
-            delayTime.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                delayTimeValue.textContent = val + 'ms';
-                engine.effects.delay.time = val / 1000;
-                engine.updateDelay();
-            });
-            delayFeedback.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                delayFeedbackValue.textContent = val + '%';
-                engine.effects.delay.feedback = val / 100;
-                engine.updateDelay();
-            });
+            if (elements.delayToggle) {
+                elements.delayToggle.addEventListener('change', (e) => {
+                    window.engine.effects.delay.active = e.target.checked;
+                    window.engine.rebuildChain();
+                });
+            }
+            if (elements.delayTime && elements.delayTimeValue) {
+                elements.delayTime.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    elements.delayTimeValue.textContent = val + 'ms';
+                    window.engine.effects.delay.time = val / 1000;
+                    window.engine.updateDelay();
+                });
+            }
+            if (elements.delayFeedback && elements.delayFeedbackValue) {
+                elements.delayFeedback.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    elements.delayFeedbackValue.textContent = val + '%';
+                    window.engine.effects.delay.feedback = val / 100;
+                    window.engine.updateDelay();
+                });
+            }
 
             // EQ
-            eqBass.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                eqBassValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
-                engine.effects.eq.bass = val;
-                engine.updateEQ();
-            });
-            eqMid.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                eqMidValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
-                engine.effects.eq.mid = val;
-                engine.updateEQ();
-            });
-            eqTreble.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                eqTrebleValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
-                engine.effects.eq.treble = val;
-                engine.updateEQ();
-            });
+            if (elements.eqBass && elements.eqBassValue) {
+                elements.eqBass.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    elements.eqBassValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
+                    window.engine.effects.eq.bass = val;
+                    window.engine.updateEQ();
+                });
+            }
+            if (elements.eqMid && elements.eqMidValue) {
+                elements.eqMid.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    elements.eqMidValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
+                    window.engine.effects.eq.mid = val;
+                    window.engine.updateEQ();
+                });
+            }
+            if (elements.eqTreble && elements.eqTrebleValue) {
+                elements.eqTreble.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    elements.eqTrebleValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
+                    window.engine.effects.eq.treble = val;
+                    window.engine.updateEQ();
+                });
+            }
 
             // Fade
-            fadeIn.addEventListener('input', (e) => {
-                const val = parseFloat(e.target.value);
-                fadeInValue.textContent = val.toFixed(1) + 's';
-                engine.setFadeIn(val);
-            });
-            fadeOut.addEventListener('input', (e) => {
-                const val = parseFloat(e.target.value);
-                fadeOutValue.textContent = val.toFixed(1) + 's';
-                engine.setFadeOut(val);
-            });
+            if (elements.fadeIn && elements.fadeInValue) {
+                elements.fadeIn.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    elements.fadeInValue.textContent = val.toFixed(1) + 's';
+                    window.engine.setFadeIn(val);
+                });
+            }
+            if (elements.fadeOut && elements.fadeOutValue) {
+                elements.fadeOut.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    elements.fadeOutValue.textContent = val.toFixed(1) + 's';
+                    window.engine.setFadeOut(val);
+                });
+            }
 
             // Compressor
-            compressorToggle.addEventListener('change', (e) => {
-                engine.effects.compressor.active = e.target.checked;
-                engine.rebuildChain();
-            });
-            threshold.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                thresholdValue.textContent = val;
-                engine.effects.compressor.threshold = val;
-                engine.updateCompressor();
-            });
-            ratio.addEventListener('input', (e) => {
-                const val = parseFloat(e.target.value);
-                ratioValue.textContent = val.toFixed(1);
-                engine.effects.compressor.ratio = val;
-                engine.updateCompressor();
-            });
-            attack.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                attackValue.textContent = val;
-                engine.effects.compressor.attack = val / 1000;
-                engine.updateCompressor();
-            });
-            release.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                releaseValue.textContent = val;
-                engine.effects.compressor.release = val / 1000;
-                engine.updateCompressor();
-            });
+            if (elements.compressorToggle) {
+                elements.compressorToggle.addEventListener('change', (e) => {
+                    window.engine.effects.compressor.active = e.target.checked;
+                    window.engine.rebuildChain();
+                });
+            }
+            if (elements.threshold && elements.thresholdValue) {
+                elements.threshold.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    elements.thresholdValue.textContent = val;
+                    window.engine.effects.compressor.threshold = val;
+                    window.engine.updateCompressor();
+                });
+            }
+            if (elements.ratio && elements.ratioValue) {
+                elements.ratio.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    elements.ratioValue.textContent = val.toFixed(1);
+                    window.engine.effects.compressor.ratio = val;
+                    window.engine.updateCompressor();
+                });
+            }
+            if (elements.attack && elements.attackValue) {
+                elements.attack.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    elements.attackValue.textContent = val;
+                    window.engine.effects.compressor.attack = val / 1000;
+                    window.engine.updateCompressor();
+                });
+            }
+            if (elements.release && elements.releaseValue) {
+                elements.release.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    elements.releaseValue.textContent = val;
+                    window.engine.effects.compressor.release = val / 1000;
+                    window.engine.updateCompressor();
+                });
+            }
 
             // Chorus
-            chorusToggle.addEventListener('change', (e) => {
-                engine.effects.chorus.active = e.target.checked;
-                engine.rebuildChain();
-            });
-            chorusRate.addEventListener('input', (e) => {
-                const val = parseFloat(e.target.value);
-                chorusRateValue.textContent = val.toFixed(1);
-                engine.effects.chorus.rate = val;
-                engine.updateChorus();
-            });
-            chorusDepth.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                chorusDepthValue.textContent = val + '%';
-                engine.effects.chorus.depth = val / 100;
-                engine.updateChorus();
-            });
+            if (elements.chorusToggle) {
+                elements.chorusToggle.addEventListener('change', (e) => {
+                    window.engine.effects.chorus.active = e.target.checked;
+                    window.engine.rebuildChain();
+                });
+            }
+            if (elements.chorusRate && elements.chorusRateValue) {
+                elements.chorusRate.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    elements.chorusRateValue.textContent = val.toFixed(1);
+                    window.engine.effects.chorus.rate = val;
+                    window.engine.updateChorus();
+                });
+            }
+            if (elements.chorusDepth && elements.chorusDepthValue) {
+                elements.chorusDepth.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    elements.chorusDepthValue.textContent = val + '%';
+                    window.engine.effects.chorus.depth = val / 100;
+                    window.engine.updateChorus();
+                });
+            }
 
             // Tremolo
-            tremoloToggle.addEventListener('change', (e) => {
-                engine.effects.tremolo.active = e.target.checked;
-                engine.rebuildChain();
-            });
-            tremoloRate.addEventListener('input', (e) => {
-                const val = parseFloat(e.target.value);
-                tremoloRateValue.textContent = val.toFixed(1);
-                engine.effects.tremolo.rate = val;
-                engine.updateTremolo();
-            });
-            tremoloDepth.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                tremoloDepthValue.textContent = val + '%';
-                engine.effects.tremolo.depth = val / 100;
-                engine.updateTremolo();
-            });
+            if (elements.tremoloToggle) {
+                elements.tremoloToggle.addEventListener('change', (e) => {
+                    window.engine.effects.tremolo.active = e.target.checked;
+                    window.engine.rebuildChain();
+                });
+            }
+            if (elements.tremoloRate && elements.tremoloRateValue) {
+                elements.tremoloRate.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    elements.tremoloRateValue.textContent = val.toFixed(1);
+                    window.engine.effects.tremolo.rate = val;
+                    window.engine.updateTremolo();
+                });
+            }
+            if (elements.tremoloDepth && elements.tremoloDepthValue) {
+                elements.tremoloDepth.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    elements.tremoloDepthValue.textContent = val + '%';
+                    window.engine.effects.tremolo.depth = val / 100;
+                    window.engine.updateTremolo();
+                });
+            }
 
             // Export
-            document.getElementById('exportBtn').addEventListener('click', () => {
-                if (engine.audioBuffer) engine.exportAudio();
-            });
+            if (elements.exportBtn) {
+                elements.exportBtn.addEventListener('click', () => {
+                    if (window.engine.audioBuffer) window.engine.exportAudio();
+                });
+            }
 
             // Reset
-            document.getElementById('resetBtn').addEventListener('click', () => {
-                speedControl.value = 1; speedValue.textContent = '1.0x';
-                pitchControl.value = 0; pitchValue.textContent = '0';
-                reverbToggle.checked = false; engine.effects.reverb.active = false;
-                reverbDecay.value = 2; reverbDecayValue.textContent = '2.0s'; engine.effects.reverb.decay = 2;
-                reverbWet.value = 50; reverbWetValue.textContent = '50%'; engine.effects.reverb.wet = 0.5;
-                bassToggle.checked = false; engine.effects.bass.active = false;
-                bassLevel.value = 6; bassValue.textContent = '6dB'; engine.effects.bass.gain = 6;
-                bassFreq.value = 100; bassFreqValue.textContent = '100Hz'; engine.effects.bass.freq = 100;
-                delayToggle.checked = false; engine.effects.delay.active = false;
-                delayTime.value = 300; delayTimeValue.textContent = '300ms'; engine.effects.delay.time = 0.3;
-                delayFeedback.value = 30; delayFeedbackValue.textContent = '30%'; engine.effects.delay.feedback = 0.3;
-                eqBass.value = 0; eqBassValue.textContent = '0dB'; engine.effects.eq.bass = 0;
-                eqMid.value = 0; eqMidValue.textContent = '0dB'; engine.effects.eq.mid = 0;
-                eqTreble.value = 0; eqTrebleValue.textContent = '0dB'; engine.effects.eq.treble = 0;
-                volumeSlider.value = 1; engine.setVolume(1);
-                fadeIn.value = 0; fadeInValue.textContent = '0.0s'; engine.setFadeIn(0);
-                fadeOut.value = 0; fadeOutValue.textContent = '0.0s'; engine.setFadeOut(0);
-                compressorToggle.checked = false; engine.effects.compressor.active = false;
-                threshold.value = -24; thresholdValue.textContent = '-24'; engine.effects.compressor.threshold = -24;
-                ratio.value = 4; ratioValue.textContent = '4'; engine.effects.compressor.ratio = 4;
-                attack.value = 3; attackValue.textContent = '3'; engine.effects.compressor.attack = 0.003;
-                release.value = 250; releaseValue.textContent = '250'; engine.effects.compressor.release = 0.25;
-                chorusToggle.checked = false; engine.effects.chorus.active = false;
-                chorusRate.value = 0.5; chorusRateValue.textContent = '0.5'; engine.effects.chorus.rate = 0.5;
-                chorusDepth.value = 50; chorusDepthValue.textContent = '50%'; engine.effects.chorus.depth = 0.5;
-                tremoloToggle.checked = false; engine.effects.tremolo.active = false;
-                tremoloRate.value = 4; tremoloRateValue.textContent = '4'; engine.effects.tremolo.rate = 4;
-                tremoloDepth.value = 50; tremoloDepthValue.textContent = '50%'; engine.effects.tremolo.depth = 0.5;
+            if (elements.resetBtn) {
+                elements.resetBtn.addEventListener('click', () => {
+                    // Reset all UI elements to defaults
+                    if (elements.speedControl) elements.speedControl.value = 1;
+                    if (elements.speedValue) elements.speedValue.textContent = '1.0x';
+                    if (elements.pitchControl) elements.pitchControl.value = 0;
+                    if (elements.pitchValue) elements.pitchValue.textContent = '0';
+                    if (elements.reverbToggle) elements.reverbToggle.checked = false;
+                    if (elements.reverbDecay) elements.reverbDecay.value = 2;
+                    if (elements.reverbDecayValue) elements.reverbDecayValue.textContent = '2.0s';
+                    if (elements.reverbWet) elements.reverbWet.value = 50;
+                    if (elements.reverbWetValue) elements.reverbWetValue.textContent = '50%';
+                    if (elements.bassToggle) elements.bassToggle.checked = false;
+                    if (elements.bassLevel) elements.bassLevel.value = 6;
+                    if (elements.bassValue) elements.bassValue.textContent = '6dB';
+                    if (elements.bassFreq) elements.bassFreq.value = 100;
+                    if (elements.bassFreqValue) elements.bassFreqValue.textContent = '100Hz';
+                    if (elements.delayToggle) elements.delayToggle.checked = false;
+                    if (elements.delayTime) elements.delayTime.value = 300;
+                    if (elements.delayTimeValue) elements.delayTimeValue.textContent = '300ms';
+                    if (elements.delayFeedback) elements.delayFeedback.value = 30;
+                    if (elements.delayFeedbackValue) elements.delayFeedbackValue.textContent = '30%';
+                    if (elements.eqBass) elements.eqBass.value = 0;
+                    if (elements.eqBassValue) elements.eqBassValue.textContent = '0dB';
+                    if (elements.eqMid) elements.eqMid.value = 0;
+                    if (elements.eqMidValue) elements.eqMidValue.textContent = '0dB';
+                    if (elements.eqTreble) elements.eqTreble.value = 0;
+                    if (elements.eqTrebleValue) elements.eqTrebleValue.textContent = '0dB';
+                    if (elements.volumeSlider) elements.volumeSlider.value = 1;
+                    if (elements.fadeIn) elements.fadeIn.value = 0;
+                    if (elements.fadeInValue) elements.fadeInValue.textContent = '0.0s';
+                    if (elements.fadeOut) elements.fadeOut.value = 0;
+                    if (elements.fadeOutValue) elements.fadeOutValue.textContent = '0.0s';
+                    if (elements.compressorToggle) elements.compressorToggle.checked = false;
+                    if (elements.threshold) elements.threshold.value = -24;
+                    if (elements.thresholdValue) elements.thresholdValue.textContent = '-24';
+                    if (elements.ratio) elements.ratio.value = 4;
+                    if (elements.ratioValue) elements.ratioValue.textContent = '4';
+                    if (elements.attack) elements.attack.value = 3;
+                    if (elements.attackValue) elements.attackValue.textContent = '3';
+                    if (elements.release) elements.release.value = 250;
+                    if (elements.releaseValue) elements.releaseValue.textContent = '250';
+                    if (elements.chorusToggle) elements.chorusToggle.checked = false;
+                    if (elements.chorusRate) elements.chorusRate.value = 0.5;
+                    if (elements.chorusRateValue) elements.chorusRateValue.textContent = '0.5';
+                    if (elements.chorusDepth) elements.chorusDepth.value = 50;
+                    if (elements.chorusDepthValue) elements.chorusDepthValue.textContent = '50%';
+                    if (elements.tremoloToggle) elements.tremoloToggle.checked = false;
+                    if (elements.tremoloRate) elements.tremoloRate.value = 4;
+                    if (elements.tremoloRateValue) elements.tremoloRateValue.textContent = '4';
+                    if (elements.tremoloDepth) elements.tremoloDepth.value = 50;
+                    if (elements.tremoloDepthValue) elements.tremoloDepthValue.textContent = '50%';
 
-                engine.lockPitchSpeed = true;
-                lockPitchSpeed.checked = true;
-                
-                engine.loop = false;
-                document.getElementById('loopBtn').className = 'btn btn-secondary';
-                
-                engine.updateSpeedPitch();
-                engine.rebuildChain();
-            });
+                    window.engine.lockPitchSpeed = true;
+                    if (elements.lockPitchSpeed) elements.lockPitchSpeed.checked = true;
+                    
+                    window.engine.loop = false;
+                    if (elements.loopBtn) elements.loopBtn.className = 'btn btn-secondary';
+                    
+                    window.engine.effects = {
+                        speed: 1.0,
+                        pitch: 0,
+                        reverb: { active: false, decay: 2.0, wet: 0.5 },
+                        bass: { active: false, gain: 6, freq: 100 },
+                        compressor: { active: false, threshold: -24, ratio: 4, attack: 0.003, release: 0.25 },
+                        delay: { active: false, time: 0.3, feedback: 0.3 },
+                        eq: { bass: 0, mid: 0, treble: 0 },
+                        volume: 1.0,
+                        fadeIn: 0,
+                        fadeOut: 0,
+                        chorus: { active: false, rate: 0.5, depth: 0.5 },
+                        tremolo: { active: false, rate: 4, depth: 0.5 }
+                    };
+                    
+                    window.engine.setVolume(1);
+                    window.engine.setFadeIn(0);
+                    window.engine.setFadeOut(0);
+                    window.engine.updateSpeedPitch();
+                    window.engine.rebuildChain();
+                });
+            }
 
             // Presets
-            window.applyPreset = (preset) => {
-                document.getElementById('resetBtn').click();
+            window.applyPreset = function(preset) {
+                if (elements.resetBtn) elements.resetBtn.click();
+                
                 switch(preset) {
                     case 'slowed':
-                        speedControl.value = 0.8; speedValue.textContent = '0.80x';
-                        reverbToggle.checked = true; engine.effects.reverb.active = true;
-                        reverbDecay.value = 3; reverbDecayValue.textContent = '3.0s'; engine.effects.reverb.decay = 3;
-                        reverbWet.value = 60; reverbWetValue.textContent = '60%'; engine.effects.reverb.wet = 0.6;
-                        bassToggle.checked = true; engine.effects.bass.active = true;
-                        bassLevel.value = 8; bassValue.textContent = '8dB'; engine.effects.bass.gain = 8;
-                        bassFreq.value = 80; bassFreqValue.textContent = '80Hz'; engine.effects.bass.freq = 80;
+                        if (elements.speedControl) elements.speedControl.value = 0.8;
+                        if (elements.speedValue) elements.speedValue.textContent = '0.80x';
+                        if (elements.reverbToggle) elements.reverbToggle.checked = true;
+                        if (elements.reverbDecay) elements.reverbDecay.value = 3;
+                        if (elements.reverbDecayValue) elements.reverbDecayValue.textContent = '3.0s';
+                        if (elements.reverbWet) elements.reverbWet.value = 60;
+                        if (elements.reverbWetValue) elements.reverbWetValue.textContent = '60%';
+                        if (elements.bassToggle) elements.bassToggle.checked = true;
+                        if (elements.bassLevel) elements.bassLevel.value = 8;
+                        if (elements.bassValue) elements.bassValue.textContent = '8dB';
+                        if (elements.bassFreq) elements.bassFreq.value = 80;
+                        if (elements.bassFreqValue) elements.bassFreqValue.textContent = '80Hz';
                         break;
                     case 'nightcore':
-                        speedControl.value = 1.3; speedValue.textContent = '1.30x';
-                        pitchControl.value = 5; pitchValue.textContent = '5';
-                        lockPitchSpeed.checked = false; engine.lockPitchSpeed = false;
+                        if (elements.speedControl) elements.speedControl.value = 1.3;
+                        if (elements.speedValue) elements.speedValue.textContent = '1.30x';
+                        if (elements.pitchControl) elements.pitchControl.value = 5;
+                        if (elements.pitchValue) elements.pitchValue.textContent = '5';
+                        if (elements.lockPitchSpeed) elements.lockPitchSpeed.checked = false;
+                        window.engine.lockPitchSpeed = false;
                         break;
                     case 'daycore':
-                        speedControl.value = 0.7; speedValue.textContent = '0.70x';
-                        pitchControl.value = -4; pitchValue.textContent = '-4';
-                        reverbToggle.checked = true; engine.effects.reverb.active = true;
-                        reverbDecay.value = 2.5; reverbDecayValue.textContent = '2.5s'; engine.effects.reverb.decay = 2.5;
-                        bassToggle.checked = true; engine.effects.bass.active = true;
-                        bassLevel.value = 6; bassValue.textContent = '6dB'; engine.effects.bass.gain = 6;
+                        if (elements.speedControl) elements.speedControl.value = 0.7;
+                        if (elements.speedValue) elements.speedValue.textContent = '0.70x';
+                        if (elements.pitchControl) elements.pitchControl.value = -4;
+                        if (elements.pitchValue) elements.pitchValue.textContent = '-4';
+                        if (elements.reverbToggle) elements.reverbToggle.checked = true;
+                        if (elements.reverbDecay) elements.reverbDecay.value = 2.5;
+                        if (elements.reverbDecayValue) elements.reverbDecayValue.textContent = '2.5s';
+                        if (elements.bassToggle) elements.bassToggle.checked = true;
+                        if (elements.bassLevel) elements.bassLevel.value = 6;
+                        if (elements.bassValue) elements.bassValue.textContent = '6dB';
                         break;
                     case 'bassboosted':
-                        bassToggle.checked = true; engine.effects.bass.active = true;
-                        bassLevel.value = 15; bassValue.textContent = '15dB'; engine.effects.bass.gain = 15;
-                        bassFreq.value = 60; bassFreqValue.textContent = '60Hz'; engine.effects.bass.freq = 60;
+                        if (elements.bassToggle) elements.bassToggle.checked = true;
+                        if (elements.bassLevel) elements.bassLevel.value = 15;
+                        if (elements.bassValue) elements.bassValue.textContent = '15dB';
+                        if (elements.bassFreq) elements.bassFreq.value = 60;
+                        if (elements.bassFreqValue) elements.bassFreqValue.textContent = '60Hz';
                         break;
                     case 'lofi':
-                        speedControl.value = 0.85; speedValue.textContent = '0.85x';
-                        reverbToggle.checked = true; engine.effects.reverb.active = true;
-                        reverbDecay.value = 2; reverbDecayValue.textContent = '2.0s'; engine.effects.reverb.decay = 2;
-                        reverbWet.value = 40; reverbWetValue.textContent = '40%'; engine.effects.reverb.wet = 0.4;
+                        if (elements.speedControl) elements.speedControl.value = 0.85;
+                        if (elements.speedValue) elements.speedValue.textContent = '0.85x';
+                        if (elements.reverbToggle) elements.reverbToggle.checked = true;
+                        if (elements.reverbDecay) elements.reverbDecay.value = 2;
+                        if (elements.reverbDecayValue) elements.reverbDecayValue.textContent = '2.0s';
+                        if (elements.reverbWet) elements.reverbWet.value = 40;
+                        if (elements.reverbWetValue) elements.reverbWetValue.textContent = '40%';
                         break;
                     case 'vaporwave':
-                        speedControl.value = 0.65; speedValue.textContent = '0.65x';
-                        pitchControl.value = -6; pitchValue.textContent = '-6';
-                        reverbToggle.checked = true; engine.effects.reverb.active = true;
-                        reverbDecay.value = 4; reverbDecayValue.textContent = '4.0s'; engine.effects.reverb.decay = 4;
-                        reverbWet.value = 70; reverbWetValue.textContent = '70%'; engine.effects.reverb.wet = 0.7;
-                        delayToggle.checked = true; engine.effects.delay.active = true;
-                        delayTime.value = 450; delayTimeValue.textContent = '450ms'; engine.effects.delay.time = 0.45;
-                        delayFeedback.value = 40; delayFeedbackValue.textContent = '40%'; engine.effects.delay.feedback = 0.4;
+                        if (elements.speedControl) elements.speedControl.value = 0.65;
+                        if (elements.speedValue) elements.speedValue.textContent = '0.65x';
+                        if (elements.pitchControl) elements.pitchControl.value = -6;
+                        if (elements.pitchValue) elements.pitchValue.textContent = '-6';
+                        if (elements.reverbToggle) elements.reverbToggle.checked = true;
+                        if (elements.reverbDecay) elements.reverbDecay.value = 4;
+                        if (elements.reverbDecayValue) elements.reverbDecayValue.textContent = '4.0s';
+                        if (elements.reverbWet) elements.reverbWet.value = 70;
+                        if (elements.reverbWetValue) elements.reverbWetValue.textContent = '70%';
+                        if (elements.delayToggle) elements.delayToggle.checked = true;
+                        if (elements.delayTime) elements.delayTime.value = 450;
+                        if (elements.delayTimeValue) elements.delayTimeValue.textContent = '450ms';
+                        if (elements.delayFeedback) elements.delayFeedback.value = 40;
+                        if (elements.delayFeedbackValue) elements.delayFeedbackValue.textContent = '40%';
                         break;
                 }
-                engine.effects.speed = parseFloat(speedControl.value);
-                engine.effects.pitch = parseInt(pitchControl.value);
-                engine.updateSpeedPitch();
-                engine.rebuildChain();
+                
+                window.engine.effects.speed = parseFloat(elements.speedControl?.value || 1);
+                window.engine.effects.pitch = parseInt(elements.pitchControl?.value || 0);
+                window.engine.updateSpeedPitch();
+                window.engine.rebuildChain();
             };
 
             // Progress bar seeking
-            document.getElementById('progressBar').addEventListener('click', (e) => {
-                if (!engine.audioBuffer) return;
-                const rect = e.target.getBoundingClientRect();
-                const percent = (e.clientX - rect.left) / rect.width;
-                const seekTime = percent * engine.audioBuffer.duration;
-                engine.seek(seekTime);
-            });
+            if (elements.progressBar) {
+                elements.progressBar.addEventListener('click', (e) => {
+                    if (!window.engine.audioBuffer) return;
+                    const rect = e.target.getBoundingClientRect();
+                    const percent = (e.clientX - rect.left) / rect.width;
+                    const seekTime = percent * window.engine.audioBuffer.duration;
+                    window.engine.seek(seekTime);
+                });
+            }
 
+            // Window resize
             window.addEventListener('resize', () => {
-                if (engine.audioBuffer) engine.drawWaveform();
+                if (window.engine && window.engine.audioBuffer) {
+                    window.engine.drawWaveform();
+                }
             });
 
-            // Make engine globally accessible for presets
-            window.engine = engine;
+            console.log('Syphon initialization complete');
         });
     </script>
 </body>
