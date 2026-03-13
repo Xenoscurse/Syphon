@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* (styles unchanged) */
+        /* === RESET & GLOBAL === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
@@ -32,8 +32,16 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            animation: popIn 0.6s cubic-bezier(0.26, 1.84, 0.46, 0.99) forwards;
+            transform-origin: center;
         }
 
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* === HEADER === */
         header {
             text-align: center;
             padding: 40px 0;
@@ -54,6 +62,7 @@
             font-size: 1.2rem;
         }
 
+        /* === STATUS BADGE === */
         .status-badge {
             display: inline-block;
             padding: 4px 12px;
@@ -73,6 +82,7 @@
             border: 1px solid #f59e0b;
         }
 
+        /* === UPLOAD AREA === */
         .upload-area {
             background: rgba(255, 255, 255, 0.05);
             border: 2px dashed #4a0e6e;
@@ -98,6 +108,7 @@
         .upload-area h3 { font-size: 1.5rem; margin-bottom: 10px; }
         .upload-area p { color: #9ca3af; }
 
+        /* === WAVEFORM & PROGRESS === */
         .waveform-container {
             background: rgba(0, 0, 0, 0.3);
             border-radius: 10px;
@@ -136,6 +147,7 @@
             transition: width 0.1s linear;
         }
 
+        /* === EFFECTS PANEL === */
         .effects-panel {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
@@ -207,6 +219,7 @@
             display: block;
         }
 
+        /* === SLIDERS === */
         .slider-container { margin: 15px 0; }
         .slider-label {
             display: flex;
@@ -232,6 +245,7 @@
             border: 2px solid #8b5cf6;
         }
 
+        /* === TOGGLE SWITCH === */
         .toggle-switch {
             position: relative;
             display: inline-block;
@@ -270,6 +284,7 @@
             line-height: 24px;
         }
 
+        /* === BUTTONS === */
         .action-buttons {
             display: flex;
             gap: 15px;
@@ -311,6 +326,7 @@
             border-color: #8b5cf6;
         }
 
+        /* === TRANSPORT CONTROLS === */
         .transport-controls {
             display: flex;
             gap: 15px;
@@ -319,6 +335,7 @@
             flex-wrap: wrap;
         }
 
+        /* === VOLUME CONTROL === */
         .volume-control {
             display: flex;
             align-items: center;
@@ -336,6 +353,7 @@
             width: 120px;
         }
 
+        /* === FOOTER & SPINNER === */
         footer {
             text-align: center;
             padding: 40px 0;
@@ -361,6 +379,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* === RESPONSIVE === */
         @media (max-width: 768px) {
             .logo { font-size: 2.5rem; }
             .effects-grid { grid-template-columns: 1fr; }
@@ -507,29 +526,6 @@
                     </div>
                 </div>
 
-                <!-- Distortion (fixed) -->
-                <div class="effect-card" id="card-distortion">
-                    <div class="effect-header" onclick="toggleDescription('distortion-desc')">
-                        <i class="fas fa-wave-square effect-icon"></i>
-                        <span class="effect-name">Distortion</span>
-                        <i class="fas fa-chevron-down effect-description-toggle" id="distortion-desc-icon"></i>
-                    </div>
-                    <div class="effect-description-content" id="distortion-desc">
-                        Adds warm saturation or aggressive overdrive. Based on tanh wave‑shaping for smooth clipping.
-                    </div>
-                    <div class="effect-control">
-                        <span>Off</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="distortionToggle"><span class="toggle-slider"></span>
-                        </label>
-                        <span>On</span>
-                    </div>
-                    <div class="slider-container">
-                        <div class="slider-label"><span>Drive</span><span id="distortionValue">0</span></div>
-                        <input type="range" min="0" max="100" step="1" value="0" id="distortionControl">
-                    </div>
-                </div>
-
                 <!-- Delay/Echo -->
                 <div class="effect-card" id="card-delay">
                     <div class="effect-header" onclick="toggleDescription('delay-desc')">
@@ -601,49 +597,38 @@
                     </div>
                 </div>
 
-                <!-- Vocal Remover (fixed) -->
-                <div class="effect-card" id="card-vocal-remover">
-                    <div class="effect-header" onclick="toggleDescription('vocal-remover-desc')">
-                        <i class="fas fa-microphone-slash effect-icon"></i>
-                        <span class="effect-name">Vocal Remover</span>
-                        <i class="fas fa-chevron-down effect-description-toggle" id="vocal-remover-desc-icon"></i>
+                <!-- Compressor (NEW) -->
+                <div class="effect-card" id="card-compressor">
+                    <div class="effect-header" onclick="toggleDescription('compressor-desc')">
+                        <i class="fas fa-compress-alt effect-icon"></i>
+                        <span class="effect-name">Compressor</span>
+                        <i class="fas fa-chevron-down effect-description-toggle" id="compressor-desc-icon"></i>
                     </div>
-                    <div class="effect-description-content" id="vocal-remover-desc">
-                        Attenuates the center (vocal) channel by converting to mid/side and reducing the mid gain.
-                    </div>
-                    <div class="effect-control">
-                        <span>Off</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="vocalRemoverToggle"><span class="toggle-slider"></span>
-                        </label>
-                        <span>On</span>
-                    </div>
-                    <div class="slider-container">
-                        <div class="slider-label"><span>Strength</span><span id="vocalRemoverValue">50%</span></div>
-                        <input type="range" min="0" max="100" step="1" value="50" id="vocalRemoverStrength">
-                    </div>
-                </div>
-
-                <!-- Center Channel (Vocals Only) - fixed -->
-                <div class="effect-card" id="card-center">
-                    <div class="effect-header" onclick="toggleDescription('center-desc')">
-                        <i class="fas fa-microphone effect-icon"></i>
-                        <span class="effect-name">Center Channel (Vocals)</span>
-                        <i class="fas fa-chevron-down effect-description-toggle" id="center-desc-icon"></i>
-                    </div>
-                    <div class="effect-description-content" id="center-desc">
-                        Isolates the center (vocal) channel by boosting mid and attenuating sides. Great for karaoke backing tracks.
+                    <div class="effect-description-content" id="compressor-desc">
+                        Reduces dynamic range. Lower threshold and higher ratio create a punchier, more controlled sound.
                     </div>
                     <div class="effect-control">
                         <span>Off</span>
                         <label class="toggle-switch">
-                            <input type="checkbox" id="centerToggle"><span class="toggle-slider"></span>
+                            <input type="checkbox" id="compressorToggle"><span class="toggle-slider"></span>
                         </label>
                         <span>On</span>
                     </div>
                     <div class="slider-container">
-                        <div class="slider-label"><span>Strength</span><span id="centerValue">50%</span></div>
-                        <input type="range" min="0" max="100" step="1" value="50" id="centerStrength">
+                        <div class="slider-label"><span>Threshold (dB)</span><span id="thresholdValue">-24</span></div>
+                        <input type="range" min="-60" max="0" step="1" value="-24" id="threshold">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label"><span>Ratio</span><span id="ratioValue">4</span></div>
+                        <input type="range" min="1" max="20" step="0.5" value="4" id="ratio">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label"><span>Attack (ms)</span><span id="attackValue">3</span></div>
+                        <input type="range" min="0" max="100" step="1" value="3" id="attack">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label"><span>Release (ms)</span><span id="releaseValue">250</span></div>
+                        <input type="range" min="10" max="1000" step="10" value="250" id="release">
                     </div>
                 </div>
             </div>
@@ -713,7 +698,7 @@
                     trebleEQ: null,
                     bassBoost: null,
                     bassClipper: null,
-                    distortion: null,
+                    compressor: null,
                     delay: null,
                     delayFeedback: null,
                     reverb: {
@@ -722,9 +707,7 @@
                         convolver: null,
                         reverbSum: null
                     },
-                    fadeGain: null,
-                    vocalRemover: null,
-                    center: null
+                    fadeGain: null
                 };
 
                 this.effects = {
@@ -732,14 +715,12 @@
                     pitch: 0,
                     reverb: { active: false, decay: 2.0, wet: 0.5 },
                     bass: { active: false, gain: 6, freq: 100 },
-                    distortion: { active: false, amount: 0 },
+                    compressor: { active: false, threshold: -24, ratio: 4, attack: 0.003, release: 0.25 },
                     delay: { active: false, time: 0.3, feedback: 0.3 },
                     eq: { bass: 0, mid: 0, treble: 0 },
                     volume: 1.0,
                     fadeIn: 0,
-                    fadeOut: 0,
-                    vocalRemover: { active: false, strength: 0.5 },
-                    center: { active: false, strength: 0.5 }
+                    fadeOut: 0
                 };
 
                 this.lockPitchSpeed = true;
@@ -825,18 +806,6 @@
                 ctx.stroke();
             }
 
-            // New distortion curve: tanh for smooth saturation
-            createDistortionCurve(amount) {
-                const samples = 44100;
-                const curve = new Float32Array(samples);
-                const drive = Math.max(1, amount / 10); // scale drive
-                for (let i = 0; i < samples; ++i) {
-                    let x = (i * 2) / samples - 1;
-                    curve[i] = Math.tanh(x * drive);
-                }
-                return curve;
-            }
-
             createReverbImpulse(duration) {
                 const sampleRate = this.audioContext.sampleRate;
                 const length = sampleRate * duration;
@@ -849,69 +818,6 @@
                     }
                 }
                 return impulse;
-            }
-
-            // Correct mid/side processor
-            createMidSideProcessor(inputNode, type, strength) {
-                const splitter = this.audioContext.createChannelSplitter(2);
-                const leftGain = this.audioContext.createGain();
-                const rightGain = this.audioContext.createGain();
-                const midGain = this.audioContext.createGain();
-                const sideGain = this.audioContext.createGain();
-                const merger = this.audioContext.createChannelMerger(2);
-
-                // Connect splitter to gains
-                splitter.connect(leftGain, 0);
-                splitter.connect(rightGain, 1);
-
-                // Create mid = (L + R) * 0.5
-                const midSum = this.audioContext.createGain();
-                midSum.gain.value = 0.5;
-                leftGain.connect(midSum);
-                rightGain.connect(midSum);
-                midSum.connect(midGain);
-
-                // Create side = (L - R) * 0.5
-                const sideDiff = this.audioContext.createGain();
-                sideDiff.gain.value = 0.5;
-                const inverter = this.audioContext.createGain();
-                inverter.gain.value = -1;
-                leftGain.connect(sideDiff);
-                rightGain.connect(inverter);
-                inverter.connect(sideDiff);
-                sideDiff.connect(sideGain);
-
-                // Apply effect gains
-                if (type === 'vocalRemover') {
-                    midGain.gain.value = 1 - strength; // reduce mid
-                    sideGain.gain.value = 1;            // keep side
-                } else if (type === 'center') {
-                    midGain.gain.value = 1;              // keep mid
-                    sideGain.gain.value = 1 - strength;  // reduce side
-                }
-
-                // Recombine: L = mid + side, R = mid - side
-                const leftOut = this.audioContext.createGain();
-                const rightOut = this.audioContext.createGain();
-                const sideInvert = this.audioContext.createGain();
-                sideInvert.gain.value = -1;
-
-                midGain.connect(leftOut);
-                sideGain.connect(leftOut);
-                midGain.connect(rightOut);
-                sideGain.connect(sideInvert);
-                sideInvert.connect(rightOut);
-
-                leftOut.connect(merger, 0, 0);
-                rightOut.connect(merger, 0, 1);
-
-                inputNode.connect(splitter);
-
-                return {
-                    input: splitter,
-                    output: merger,
-                    params: { midGain, sideGain }
-                };
             }
 
             buildEffectChain() {
@@ -930,24 +836,6 @@
                 }
 
                 let lastNode = this.sourceNode;
-
-                // ---- Vocal Remover ----
-                if (this.effects.vocalRemover.active) {
-                    const proc = this.createMidSideProcessor(lastNode, 'vocalRemover', this.effects.vocalRemover.strength);
-                    lastNode = proc.output;
-                    this.nodes.vocalRemover = proc;
-                } else {
-                    this.nodes.vocalRemover = null;
-                }
-
-                // ---- Center Channel ----
-                if (this.effects.center.active) {
-                    const proc = this.createMidSideProcessor(lastNode, 'center', this.effects.center.strength);
-                    lastNode = proc.output;
-                    this.nodes.center = proc;
-                } else {
-                    this.nodes.center = null;
-                }
 
                 // ---- EQ ----
                 const bassEQ = this.audioContext.createBiquadFilter();
@@ -1007,16 +895,19 @@
                     this.nodes.bassClipper = null;
                 }
 
-                // ---- Distortion ----
-                if (this.effects.distortion.active && this.effects.distortion.amount > 0) {
-                    const distortion = this.audioContext.createWaveShaper();
-                    distortion.curve = this.createDistortionCurve(this.effects.distortion.amount);
-                    distortion.oversample = '4x';
-                    lastNode.connect(distortion);
-                    lastNode = distortion;
-                    this.nodes.distortion = distortion;
+                // ---- Compressor ----
+                if (this.effects.compressor.active) {
+                    const compressor = this.audioContext.createDynamicsCompressor();
+                    compressor.threshold.value = this.effects.compressor.threshold;
+                    compressor.ratio.value = this.effects.compressor.ratio;
+                    compressor.attack.value = this.effects.compressor.attack;
+                    compressor.release.value = this.effects.compressor.release;
+                    // knee defaults to 30, fine as is
+                    lastNode.connect(compressor);
+                    lastNode = compressor;
+                    this.nodes.compressor = compressor;
                 } else {
-                    this.nodes.distortion = null;
+                    this.nodes.compressor = null;
                 }
 
                 // ---- Delay ----
@@ -1091,9 +982,12 @@
                 }
             }
 
-            updateDistortion() {
-                if (this.nodes.distortion) {
-                    this.nodes.distortion.curve = this.createDistortionCurve(this.effects.distortion.amount);
+            updateCompressor() {
+                if (this.nodes.compressor) {
+                    this.nodes.compressor.threshold.value = this.effects.compressor.threshold;
+                    this.nodes.compressor.ratio.value = this.effects.compressor.ratio;
+                    this.nodes.compressor.attack.value = this.effects.compressor.attack;
+                    this.nodes.compressor.release.value = this.effects.compressor.release;
                 }
             }
 
@@ -1106,18 +1000,6 @@
                 if (this.nodes.reverb.dryGain && this.nodes.reverb.wetGain) {
                     this.nodes.reverb.dryGain.gain.value = 1 - this.effects.reverb.wet;
                     this.nodes.reverb.wetGain.gain.value = this.effects.reverb.wet;
-                }
-            }
-
-            updateVocalRemover() {
-                if (this.nodes.vocalRemover) {
-                    this.nodes.vocalRemover.params.midGain.gain.value = 1 - this.effects.vocalRemover.strength;
-                }
-            }
-
-            updateCenter() {
-                if (this.nodes.center) {
-                    this.nodes.center.params.sideGain.gain.value = 1 - this.effects.center.strength;
                 }
             }
 
@@ -1285,15 +1167,6 @@
 
                 let last = source;
 
-                // Vocal Remover (offline) – simplified, just pass through for export
-                // (Full offline implementation would require replicating the graph, but we'll keep it simple for now)
-                if (this.effects.vocalRemover.active) {
-                    // For simplicity, we ignore in export – user can export original and apply externally.
-                }
-                if (this.effects.center.active) {
-                    // Same as above
-                }
-
                 // EQ
                 const bEQ = offlineCtx.createBiquadFilter(); bEQ.type = 'lowshelf'; bEQ.frequency.value = 250; bEQ.gain.value = this.effects.eq.bass;
                 const mEQ = offlineCtx.createBiquadFilter(); mEQ.type = 'peaking'; mEQ.frequency.value = 1000; mEQ.Q.value = 1; mEQ.gain.value = this.effects.eq.mid;
@@ -1316,10 +1189,15 @@
                     }
                 }
 
-                // Distortion
-                if (this.effects.distortion.active && this.effects.distortion.amount > 0) {
-                    const dist = offlineCtx.createWaveShaper(); dist.curve = this.createDistortionCurve(this.effects.distortion.amount); dist.oversample = '4x';
-                    last.connect(dist); last = dist;
+                // Compressor
+                if (this.effects.compressor.active) {
+                    const comp = offlineCtx.createDynamicsCompressor();
+                    comp.threshold.value = this.effects.compressor.threshold;
+                    comp.ratio.value = this.effects.compressor.ratio;
+                    comp.attack.value = this.effects.compressor.attack;
+                    comp.release.value = this.effects.compressor.release;
+                    last.connect(comp);
+                    last = comp;
                 }
 
                 // Delay
@@ -1445,10 +1323,6 @@
         const bassFreq = document.getElementById('bassFreq');
         const bassFreqValue = document.getElementById('bassFreqValue');
 
-        const distortionToggle = document.getElementById('distortionToggle');
-        const distortionControl = document.getElementById('distortionControl');
-        const distortionValue = document.getElementById('distortionValue');
-
         const delayToggle = document.getElementById('delayToggle');
         const delayTime = document.getElementById('delayTime');
         const delayTimeValue = document.getElementById('delayTimeValue');
@@ -1469,15 +1343,18 @@
         const fadeOut = document.getElementById('fadeOut');
         const fadeOutValue = document.getElementById('fadeOutValue');
 
-        const vocalRemoverToggle = document.getElementById('vocalRemoverToggle');
-        const vocalRemoverStrength = document.getElementById('vocalRemoverStrength');
-        const vocalRemoverValue = document.getElementById('vocalRemoverValue');
+        // Compressor controls
+        const compressorToggle = document.getElementById('compressorToggle');
+        const threshold = document.getElementById('threshold');
+        const thresholdValue = document.getElementById('thresholdValue');
+        const ratio = document.getElementById('ratio');
+        const ratioValue = document.getElementById('ratioValue');
+        const attack = document.getElementById('attack');
+        const attackValue = document.getElementById('attackValue');
+        const release = document.getElementById('release');
+        const releaseValue = document.getElementById('releaseValue');
 
-        const centerToggle = document.getElementById('centerToggle');
-        const centerStrength = document.getElementById('centerStrength');
-        const centerValue = document.getElementById('centerValue');
-
-        // Event handlers (same as before, but using the fixed update methods)
+        // File upload
         uploadArea.addEventListener('click', () => fileInput.click());
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -1507,14 +1384,17 @@
             }
         });
 
+        // Transport
         document.getElementById('playPauseBtn').addEventListener('click', () => {
             if (engine.isPlaying) engine.pause(); else engine.play();
         });
         document.getElementById('loopBtn').addEventListener('click', () => engine.toggleLoop());
         document.getElementById('restartBtn').addEventListener('click', () => engine.restart());
 
+        // Volume
         volumeSlider.addEventListener('input', (e) => engine.setVolume(parseFloat(e.target.value)));
 
+        // Speed
         speedControl.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
             speedValue.textContent = val.toFixed(2) + 'x';
@@ -1553,6 +1433,7 @@
             engine.updateSpeedPitch();
         });
 
+        // Reverb
         reverbToggle.addEventListener('change', (e) => {
             engine.effects.reverb.active = e.target.checked;
             engine.rebuildChain();
@@ -1570,6 +1451,7 @@
             engine.updateReverbWet();
         });
 
+        // Bass
         bassToggle.addEventListener('change', (e) => {
             engine.effects.bass.active = e.target.checked;
             engine.rebuildChain();
@@ -1587,17 +1469,7 @@
             engine.updateBass();
         });
 
-        distortionToggle.addEventListener('change', (e) => {
-            engine.effects.distortion.active = e.target.checked;
-            engine.rebuildChain();
-        });
-        distortionControl.addEventListener('input', (e) => {
-            const val = parseInt(e.target.value);
-            distortionValue.textContent = val;
-            engine.effects.distortion.amount = val;
-            engine.updateDistortion();
-        });
-
+        // Delay
         delayToggle.addEventListener('change', (e) => {
             engine.effects.delay.active = e.target.checked;
             engine.rebuildChain();
@@ -1615,6 +1487,7 @@
             engine.updateDelay();
         });
 
+        // EQ
         eqBass.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             eqBassValue.textContent = (val > 0 ? '+' : '') + val + 'dB';
@@ -1634,6 +1507,7 @@
             engine.updateEQ();
         });
 
+        // Fade
         fadeIn.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
             fadeInValue.textContent = val.toFixed(1) + 's';
@@ -1645,32 +1519,42 @@
             engine.setFadeOut(val);
         });
 
-        vocalRemoverToggle.addEventListener('change', (e) => {
-            engine.effects.vocalRemover.active = e.target.checked;
+        // Compressor
+        compressorToggle.addEventListener('change', (e) => {
+            engine.effects.compressor.active = e.target.checked;
             engine.rebuildChain();
         });
-        vocalRemoverStrength.addEventListener('input', (e) => {
+        threshold.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
-            vocalRemoverValue.textContent = val + '%';
-            engine.effects.vocalRemover.strength = val / 100;
-            engine.updateVocalRemover();
+            thresholdValue.textContent = val;
+            engine.effects.compressor.threshold = val;
+            engine.updateCompressor();
+        });
+        ratio.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            ratioValue.textContent = val.toFixed(1);
+            engine.effects.compressor.ratio = val;
+            engine.updateCompressor();
+        });
+        attack.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            attackValue.textContent = val;
+            engine.effects.compressor.attack = val / 1000; // convert to seconds
+            engine.updateCompressor();
+        });
+        release.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            releaseValue.textContent = val;
+            engine.effects.compressor.release = val / 1000;
+            engine.updateCompressor();
         });
 
-        centerToggle.addEventListener('change', (e) => {
-            engine.effects.center.active = e.target.checked;
-            engine.rebuildChain();
-        });
-        centerStrength.addEventListener('input', (e) => {
-            const val = parseInt(e.target.value);
-            centerValue.textContent = val + '%';
-            engine.effects.center.strength = val / 100;
-            engine.updateCenter();
-        });
-
+        // Export
         document.getElementById('exportBtn').addEventListener('click', () => {
             if (engine.audioBuffer) engine.exportAudio();
         });
 
+        // Reset
         document.getElementById('resetBtn').addEventListener('click', () => {
             speedControl.value = 1; speedValue.textContent = '1.0x';
             pitchControl.value = 0; pitchValue.textContent = '0';
@@ -1680,8 +1564,6 @@
             bassToggle.checked = false; engine.effects.bass.active = false;
             bassLevel.value = 6; bassValue.textContent = '6dB'; engine.effects.bass.gain = 6;
             bassFreq.value = 100; bassFreqValue.textContent = '100Hz'; engine.effects.bass.freq = 100;
-            distortionToggle.checked = false; engine.effects.distortion.active = false;
-            distortionControl.value = 0; distortionValue.textContent = '0'; engine.effects.distortion.amount = 0;
             delayToggle.checked = false; engine.effects.delay.active = false;
             delayTime.value = 300; delayTimeValue.textContent = '300ms'; engine.effects.delay.time = 0.3;
             delayFeedback.value = 30; delayFeedbackValue.textContent = '30%'; engine.effects.delay.feedback = 0.3;
@@ -1691,10 +1573,11 @@
             volumeSlider.value = 1; engine.setVolume(1);
             fadeIn.value = 0; fadeInValue.textContent = '0.0s'; engine.setFadeIn(0);
             fadeOut.value = 0; fadeOutValue.textContent = '0.0s'; engine.setFadeOut(0);
-            vocalRemoverToggle.checked = false; engine.effects.vocalRemover.active = false;
-            vocalRemoverStrength.value = 50; vocalRemoverValue.textContent = '50%'; engine.effects.vocalRemover.strength = 0.5;
-            centerToggle.checked = false; engine.effects.center.active = false;
-            centerStrength.value = 50; centerValue.textContent = '50%'; engine.effects.center.strength = 0.5;
+            compressorToggle.checked = false; engine.effects.compressor.active = false;
+            threshold.value = -24; thresholdValue.textContent = '-24'; engine.effects.compressor.threshold = -24;
+            ratio.value = 4; ratioValue.textContent = '4'; engine.effects.compressor.ratio = 4;
+            attack.value = 3; attackValue.textContent = '3'; engine.effects.compressor.attack = 0.003;
+            release.value = 250; releaseValue.textContent = '250'; engine.effects.compressor.release = 0.25;
 
             engine.lockPitchSpeed = true;
             lockPitchSpeed.checked = true;
@@ -1706,6 +1589,7 @@
             engine.rebuildChain();
         });
 
+        // Presets
         window.applyPreset = (preset) => {
             document.getElementById('resetBtn').click();
             switch(preset) {
@@ -1741,8 +1625,7 @@
                     reverbToggle.checked = true; engine.effects.reverb.active = true;
                     reverbDecay.value = 2; reverbDecayValue.textContent = '2.0s'; engine.effects.reverb.decay = 2;
                     reverbWet.value = 40; reverbWetValue.textContent = '40%'; engine.effects.reverb.wet = 0.4;
-                    distortionToggle.checked = true; engine.effects.distortion.active = true;
-                    distortionControl.value = 20; distortionValue.textContent = '20'; engine.effects.distortion.amount = 20;
+                    // Removed distortion
                     break;
                 case 'vaporwave':
                     speedControl.value = 0.65; speedValue.textContent = '0.65x';
@@ -1761,6 +1644,7 @@
             engine.rebuildChain();
         };
 
+        // Progress bar seeking
         document.getElementById('progressBar').addEventListener('click', (e) => {
             if (!engine.audioBuffer) return;
             const rect = e.target.getBoundingClientRect();
